@@ -57,6 +57,32 @@ class Compiler:
     def literal(value):
         return "0f" + struct.pack(">f", float(value)).hex().upper()
 
+    def is_float(self, expr):
+        if isinstance(expr, Var):
+            return expr.name in self.values
+        if isinstance(expr, Literal):
+            return expr.dtype != "int"
+        if isinstance(expr, BinaryExpr):
+            return self.is_float(expr.left) or self.is_float(expr.right)
+        if isinstance(expr, TernaryExpr):
+            return self.is_float(expr.if_true) or self.is_float(expr.if_false)
+        return False
+
+    def float_expr(self, expr):
+        if not self.is_float(expr):
+            return self.instruction("cvt.rn.f32.s32", self.index(expr))
+        if isinstance(expr, Var):
+            return self.values[expr.name]
+        if isinstance(expr, Literal):
+            return self.literal(expr.value)
+        if isinstance(expr, BinaryExpr) and expr.op in ("+", "-", "*", "/"):
+            names = {"+": "add", "-": "subtract", "*": "multiply", "/": "divide"}
+            return self.operation(names[expr.op], [self.float_expr(expr.left), self.float_expr(expr.right)])
+        if isinstance(expr, TernaryExpr):
+            return self.instruction("selp.f32", self.float_expr(expr.if_true), self.float_expr(expr.if_false),
+                                    self.predicate(expr.cond))
+        raise NotImplementedError(f"float expression: {expr!r}")
+
     def predicate(self, expr):
         if isinstance(expr, BinaryExpr):
             if expr.op in ("&&", "||"):
@@ -64,9 +90,15 @@ class Compiler:
                 return self.instruction(op, self.predicate(expr.left), self.predicate(expr.right), kind="p")
             comparisons = {"==": "eq", "!=": "ne", "<": "lt", "<=": "le", ">": "gt", ">=": "ge"}
             if expr.op in comparisons:
-                return self.instruction(f"setp.{comparisons[expr.op]}.s32",
-                                        self.index(expr.left), self.index(expr.right), kind="p")
-        raise NotImplementedError(f"predicate: {expr!r}")
+                floating = self.is_float(expr)
+                evaluate = self.float_expr if floating else self.index
+                comparison = "neu" if floating and expr.op == "!=" else comparisons[expr.op]
+                dtype = "f32" if floating else "s32"
+                return self.instruction(f"setp.{comparison}.{dtype}",
+                                        evaluate(expr.left), evaluate(expr.right), kind="p")
+        if self.is_float(expr):
+            return self.instruction("setp.neu.f32", self.float_expr(expr), self.literal(0), kind="p")
+        return self.instruction("setp.ne.s32", self.index(expr), 0, kind="p")
 
     def index(self, expr):
         if isinstance(expr, Var):
@@ -77,7 +109,9 @@ class Compiler:
             return str(expr.value)
         if isinstance(expr, BinaryExpr):
             left, right = self.index(expr.left), self.index(expr.right)
-            ops = {"+": "add.s32", "-": "sub.s32", "*": "mul.lo.s32"}
+            ops = {"+": "add.s32", "-": "sub.s32", "*": "mul.lo.s32",
+                   "&": "and.b32", "|": "or.b32", "^": "xor.b32",
+                   "<<": "shl.b32", ">>": "shr.s32"}
             if expr.op in ops:
                 return self.instruction(ops[expr.op], left, right, kind="r")
             if expr.op in ("/", "//", "%"):
@@ -157,14 +191,17 @@ class Compiler:
             "maximum": ("max.NaN.f32", 2), "minimum": ("min.NaN.f32", 2),
             "sqrt": ("sqrt.rn.f32", 1), "relu": ("max.NaN.f32", 1),
             "reciprocal": ("div.rn.f32", 1), "copy": ("mov.f32", 1),
-            "exp": ("ex2.approx.f32", 1),
+            "exp": ("ex2.approx.f32", 1), "negative": ("neg.f32", 1),
+            "abs": ("abs.f32", 1), "square": ("mul.rn.f32", 1),
         }
         if name not in ops:
             raise NotImplementedError(f"elementwise operation: {name}")
         opcode, arity = ops[name]
         if len(args) != arity:
             raise ValueError(f"wrong arity for {name}")
-        if name == "relu":
+        if name == "square":
+            args = [args[0], args[0]]
+        elif name == "relu":
             args = [*args, self.literal(0)]
         elif name == "reciprocal":
             args = [self.literal(1), *args]
@@ -198,11 +235,17 @@ class Compiler:
             raise NotImplementedError("only increasing loops are supported")
         counter = self.instruction("mov.s32", self.index(start), kind="r")
         self.indices[stmt.axis.name] = counter
+        bound = self.index(end)
+        if isinstance(stmt, StridedLoop) and stmt.end is not None:
+            bound = self.instruction("mov.s32", bound, kind="r")
+            self.indices[f"{stmt.axis.name}_end"] = bound
+        loop_indices = self.indices.copy()
         head, done = self.label(), self.label()
         self.emit(f"{head}:")
-        stop = self.instruction("setp.ge.s32", counter, self.index(end), kind="p")
+        stop = self.instruction("setp.ge.s32", counter, bound, kind="p")
         self.emit(f"@{stop} bra {done};")
         self.body(stmt.body)
+        self.indices = loop_indices
         self.emit(f"add.s32 {counter}, {counter}, {self.index(step)};")
         self.emit(f"bra {head};")
         self.emit(f"{done}:")
@@ -211,11 +254,12 @@ class Compiler:
         self.indices = outer_indices
 
     def combine(self, stmt):
-        outer = self.values.copy()
+        outer, outer_indices = self.values.copy(), self.indices.copy()
         self.body(stmt.combine_states)
         for name in stmt.state:
             self.emit(f"mov.f32 {outer[name]}, {self.values[name]};")
         self.values = outer
+        self.indices = outer_indices
 
     def tree(self, stmt):
         self.check_dtype(stmt.dtype)
@@ -281,10 +325,16 @@ class Compiler:
             self.check_dtype(stmt.dtype)
             self.values[stmt.name] = self.instruction("mov.f32", self.literal(stmt.identity))
         elif isinstance(stmt, Let):
-            self.check_dtype(stmt.dtype)
-            if not isinstance(stmt.value, Literal):
-                raise NotImplementedError("only literal Let bindings are supported")
-            self.values[stmt.name] = self.instruction("mov.f32", self.literal(stmt.value.value))
+            dtype = stmt.dtype.name if stmt.dtype is not None else None
+            floating = self.is_float(stmt.value) if dtype is None else dtype == "f32"
+            if dtype not in (None, "f32", "i32"):
+                raise NotImplementedError(f"Let dtype: {dtype}")
+            if floating:
+                self.values[stmt.name] = self.instruction("mov.f32", self.float_expr(stmt.value))
+                self.indices.pop(stmt.name, None)
+            else:
+                self.indices[stmt.name] = self.instruction("mov.s32", self.index(stmt.value), kind="r")
+                self.values.pop(stmt.name, None)
         elif isinstance(stmt, Write):
             self.check_dtype(stmt.value_dtype)
             if stmt.swizzle != "NONE":
@@ -321,14 +371,14 @@ class Compiler:
             otherwise, done = self.label(), self.label()
             cond = self.predicate(stmt.cond)
             self.emit(f"@!{cond} bra {otherwise};")
-            outer = self.values.copy()
+            outer, outer_indices = self.values.copy(), self.indices.copy()
             self.body(stmt.body)
             self.emit(f"bra {done};")
             self.emit(f"{otherwise}:")
-            self.values = outer.copy()
+            self.values, self.indices = outer.copy(), outer_indices.copy()
             self.body(stmt.else_body)
             self.emit(f"{done}:")
-            self.values = outer
+            self.values, self.indices = outer, outer_indices
         elif isinstance(stmt, Smem):
             if stmt.dtype != "float" or stmt.name in self.shared:
                 raise NotImplementedError("expected distinct f32 shared buffers")
