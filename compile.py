@@ -433,13 +433,25 @@ class Compiler:
         tile = kernel.body[0]
         if tile.aux_threads:
             raise NotImplementedError("auxiliary threads are not supported yet")
+        # sm_89 launch ceilings; register/shared-memory usage may impose tighter limits.
+        for field, limit in (("block", 1024), ("grid", 2**31 - 1)):
+            dims = launch[field]
+            if (not isinstance(dims, list) or len(dims) != 3
+                    or any(type(d) is not int or d <= 0 for d in dims)):
+                raise ValueError(f"launch {field} must be three positive integers")
+            if dims[1:] != [1, 1]:
+                raise NotImplementedError("only 1-D launches are supported")
+            if dims[0] > limit:
+                raise ValueError(f"launch {field}.x must be in 1..{limit}")
+        # mad.lo.u32 must not wrap extra threads back onto valid work items.
+        # Exactly 2**32 threads is safe: the largest global ID is 2**32 - 1.
+        if launch["grid"][0] * launch["block"][0] > 2**32:
+            raise ValueError("launch global thread IDs must fit unsigned 32 bits")
         # ponytail: omit CTA raster reordering (cache locality only); tune later.
         if tile.block_threads is not None and tile.block_threads != launch["block"][0]:
             raise ValueError("launch block size does not match cooperative Tile")
         if tile.block_threads and tile.n_elements % tile.block_threads:
             raise NotImplementedError("partial cooperative blocks could skip a barrier")
-        if launch["grid"][1:] != [1, 1] or launch["block"][1:] != [1, 1]:
-            raise NotImplementedError("only 1-D launches are supported")
         if not 0 < tile.n_elements < 2**31 or any(e <= 0 for e in tile.extents):
             raise NotImplementedError("expected positive, signed-32-bit tile size")
         if launch["grid"][0] * launch["block"][0] < tile.n_elements:

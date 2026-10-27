@@ -71,8 +71,73 @@ def check_vector_loads():
     print("PASS: vector load widths, register bindings, offsets, tails, and alignment fallbacks", flush=True)
 
 
+def check_launch_ranges():
+    source = ROOT / "problems/p00_scalar_add"
+    ir = next(source.glob("*.ir.json"))
+    graph = Graph.from_dict(json.loads(ir.read_text()))
+    kernel = graph.nodes["add"].op
+    launch = json.loads((source / "meta.json").read_text())["kernels"][0]
+    # Compilation only: do NOT launch the enormous boundary grids on a GPU.
+    cases = [(grid, block, None) for grid, block in (
+        ([64, 1, 1], [1, 1, 1]),
+        ([1, 1, 1], [64, 1, 1]),
+        ([1, 1, 1], [1024, 1, 1]),
+        ([2**31 - 1, 1, 1], [1, 1, 1]),
+        ([2**31 - 1, 1, 1], [2, 1, 1]),
+        ([2**22, 1, 1], [1024, 1, 1]),  # Exactly 2**32 threads.
+    )]
+    cases += [
+        ([1, 1, 1], [1025, 1, 1], "block.x"),
+        ([2**31, 1, 1], [1, 1, 1], "grid.x"),
+        ([2**22 + 1, 1, 1], [1024, 1, 1], "global thread IDs"),
+        ([1, 2, 1], [256, 1, 1], "1-D"),
+        ([1, 1, 2], [256, 1, 1], "1-D"),
+        ([1, 1, 1], [256, 2, 1], "1-D"),
+        ([1, 1, 1], [256, 1, 2], "1-D"),
+        ([1, 1, 1], [63, 1, 1], "does not cover"),
+    ]
+    for bad in (None, 1, "1,1,1", {}, [], [1], [1, 1], [1, 1, 1, 1],
+                [0, 1, 1], [-1, 1, 1], [1, 0, 1], [1, 1, -1],
+                [1.0, 1, 1], [True, 1, 1], ["1", 1, 1], [1, False, 1]):
+        cases.append((bad, [256, 1, 1], "grid must be three positive integers"))
+        cases.append(([1, 1, 1], bad, "block must be three positive integers"))
+    for grid, block, error in cases:
+        compiler = Compiler(graph, kernel, launch | {"grid": grid, "block": block})
+        try:
+            ptx = compiler.compile()
+        except (ValueError, NotImplementedError) as exc:
+            assert error and error in str(exc), (grid, block, str(exc))
+            assert not compiler.lines, "reject invalid launches before emitting instructions"
+        else:
+            assert error is None, (grid, block, "should have failed")
+            assert "mad.lo.u32" in ptx and "setp.ge.u32" in ptx
+
+    # Keep the existing cooperative schedule restrictions, not just hardware limits.
+    for threads, error in ((128, "does not match"), (3, "partial cooperative blocks")):
+        cooperative = replace(kernel, body=(replace(kernel.body[0], block_threads=threads),))
+        descriptor = launch | {"block": [64 if threads == 128 else 3, 1, 1], "grid": [64, 1, 1]}
+        try:
+            Compiler(graph, cooperative, descriptor).compile()
+        except (ValueError, NotImplementedError) as exc:
+            assert error in str(exc)
+        else:
+            raise AssertionError("invalid cooperative launch was accepted")
+
+    with tempfile.TemporaryDirectory() as directory:
+        folder = Path(directory)
+        target = folder / ir.name
+        target.write_text(ir.read_text())
+        bad_launch = launch | {"block": [1025, 1, 1]}
+        (folder / "meta.json").write_text(json.dumps({"kernels": [bad_launch]}))
+        result = subprocess.run([sys.executable, str(ROOT / "compile.py"), str(target)],
+                                capture_output=True, text=True)
+        assert result.returncode != 0 and result.stdout == "" and "block.x" in result.stderr
+    print("PASS: launch dimensions, range boundaries, overflow, coverage, cooperation, clean CLI rejection", flush=True)
+
+
 def main(remote=False):
     check_vector_loads()
+    check_launch_ranges()
     folders = sorted(p.parent for p in (ROOT / "problems").glob("*/meta.json"))
     folders += sorted((ROOT / "local_problems").glob("v*"))
     for folder in folders:
