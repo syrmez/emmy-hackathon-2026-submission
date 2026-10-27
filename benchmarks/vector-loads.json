@@ -1,0 +1,489 @@
+{
+  "summary": "Aligned 16-float grouped loads improve this synthetic row-sum kernel; no measured public-case improvement.",
+  "method": "Same typed IR, launch, arithmetic and scalar stores; baseline forces scalar loads. Alternate A/B order; 20 warmups and 200 iterations per batch. Exact NumPy output checks for synthetic cases.",
+  "limits": "Warmed repeated buffers may fit L2. Shared hosted GPU; clocks not locked. Synthetic development microbenchmark, not a holdout or submission-wide speedup claim.",
+  "reproduce": ".venv/bin/python tools/benchmark_vector_loads.py --remote",
+  "public_comparison": {
+    "started_at": "2026-10-27T11:14:44.109184+00:00",
+    "health": {
+      "ok": true,
+      "arch_ok": true,
+      "ptxas": "/usr/local/cuda/bin/ptxas",
+      "default_arch": "sm_120",
+      "cache_dir": "/home/riftuser/.cache/ptxserver",
+      "can_compile": true,
+      "can_run": true,
+      "gpu": "NVIDIA GeForce RTX 5090 (compute capability 12.0, sm_120)"
+    },
+    "baseline_commit": "a487dece64bfe877f878a1eddc660efc924cca54",
+    "baseline_sha256": "add29a956af21d598e164971ac68da014c88dee8e9164c18cb50342b836e569e",
+    "vector_sha256": "7727ee23c957e2ac5e7f0e45d20309b504ed565a6f8e6e9d1c01107531979fc4",
+    "warmup": 20,
+    "iters": 200,
+    "trials": 12,
+    "rows": [
+      {
+        "problem": "problems/a01_attention",
+        "samples_us": {
+          "scalar": [
+            98.976,
+            98.976,
+            98.976,
+            98.976,
+            98.976,
+            98.976,
+            98.976,
+            98.976,
+            98.976,
+            98.976,
+            98.976,
+            98.976
+          ],
+          "vector": [
+            98.976,
+            98.976,
+            99.008,
+            98.976,
+            98.976,
+            98.976,
+            98.976,
+            98.976,
+            98.976,
+            98.976,
+            98.976,
+            98.976
+          ]
+        },
+        "registers": {
+          "scalar": {
+            "k_matmul_softmax_reduce_b55365": 140
+          },
+          "vector": {
+            "k_matmul_softmax_reduce_b55365": 140
+          }
+        },
+        "ptx_sha256": {
+          "scalar": "8afb3b2d6e49e15aa3ce1a6044e465655e6713b655c44001f6c79f1a6f8b1175",
+          "vector": "a9585e6dffd18839928ee35ae160e9ddfe99fda23c11ebc3f4d803ddd502697e"
+        },
+        "max_abs_error": 6.556510925292969e-07,
+        "median_us": {
+          "scalar": 98.976,
+          "vector": 98.976
+        },
+        "speedup": 1.0,
+        "vector_wins": 0
+      }
+    ],
+    "finished_at": "2026-10-27T11:15:13.668515+00:00"
+  },
+  "synthetic_sweep": {
+    "started_at": "2026-10-27T11:17:54.957566+00:00",
+    "compiler_sha256": "7727ee23c957e2ac5e7f0e45d20309b504ed565a6f8e6e9d1c01107531979fc4",
+    "synthetic": true,
+    "warmup": 20,
+    "iters": 200,
+    "trials": 8,
+    "cases": [
+      {
+        "rows": 4096,
+        "width": 4,
+        "input_bytes": 65536,
+        "samples_us": {
+          "scalar": [
+            2.976,
+            3.008,
+            3.024,
+            3.04,
+            3.008,
+            3.008,
+            2.976,
+            3.008
+          ],
+          "vector": [
+            3.04,
+            3.008,
+            2.976,
+            3.04,
+            3.04,
+            3.008,
+            3.04,
+            3.008
+          ]
+        },
+        "registers": {
+          "scalar": {
+            "grouped_sum": 12
+          },
+          "vector": {
+            "grouped_sum": 14
+          }
+        },
+        "max_abs_error": 0.0,
+        "median_us": {
+          "scalar": 3.008,
+          "vector": 3.024
+        },
+        "speedup": 0.9947089947089947,
+        "vector_wins": 1
+      },
+      {
+        "rows": 65536,
+        "width": 4,
+        "input_bytes": 1048576,
+        "samples_us": {
+          "scalar": [
+            3.04,
+            3.008,
+            3.008,
+            3.072,
+            3.008,
+            3.04,
+            3.008,
+            3.008
+          ],
+          "vector": [
+            3.04,
+            3.008,
+            3.04,
+            3.008,
+            3.008,
+            3.04,
+            3.008,
+            3.008
+          ]
+        },
+        "registers": {
+          "scalar": {
+            "grouped_sum": 12
+          },
+          "vector": {
+            "grouped_sum": 14
+          }
+        },
+        "max_abs_error": 0.0,
+        "median_us": {
+          "scalar": 3.008,
+          "vector": 3.008
+        },
+        "speedup": 1.0,
+        "vector_wins": 1
+      },
+      {
+        "rows": 262144,
+        "width": 4,
+        "input_bytes": 4194304,
+        "samples_us": {
+          "scalar": [
+            3.264,
+            3.264,
+            3.296,
+            3.264,
+            3.296,
+            3.264,
+            3.28,
+            3.296
+          ],
+          "vector": [
+            3.232,
+            3.232,
+            3.232,
+            3.232,
+            3.232,
+            3.232,
+            3.2,
+            3.2
+          ]
+        },
+        "registers": {
+          "scalar": {
+            "grouped_sum": 12
+          },
+          "vector": {
+            "grouped_sum": 14
+          }
+        },
+        "max_abs_error": 0.0,
+        "median_us": {
+          "scalar": 3.272,
+          "vector": 3.232
+        },
+        "speedup": 1.0123762376237622,
+        "vector_wins": 8
+      },
+      {
+        "rows": 4096,
+        "width": 16,
+        "input_bytes": 262144,
+        "samples_us": {
+          "scalar": [
+            4.768,
+            4.768,
+            4.8,
+            4.768,
+            4.768,
+            4.768,
+            4.8,
+            4.8
+          ],
+          "vector": [
+            3.008,
+            2.976,
+            2.976,
+            3.008,
+            3.04,
+            3.04,
+            3.008,
+            3.008
+          ]
+        },
+        "registers": {
+          "scalar": {
+            "grouped_sum": 22
+          },
+          "vector": {
+            "grouped_sum": 22
+          }
+        },
+        "max_abs_error": 0.0,
+        "median_us": {
+          "scalar": 4.768,
+          "vector": 3.008
+        },
+        "speedup": 1.5851063829787233,
+        "vector_wins": 8
+      },
+      {
+        "rows": 65536,
+        "width": 16,
+        "input_bytes": 4194304,
+        "samples_us": {
+          "scalar": [
+            4.8,
+            4.832,
+            4.8,
+            4.8,
+            4.8,
+            4.8,
+            4.832,
+            4.8
+          ],
+          "vector": [
+            3.328,
+            3.36,
+            3.36,
+            3.328,
+            3.36,
+            3.328,
+            3.36,
+            3.36
+          ]
+        },
+        "registers": {
+          "scalar": {
+            "grouped_sum": 22
+          },
+          "vector": {
+            "grouped_sum": 22
+          }
+        },
+        "max_abs_error": 0.0,
+        "median_us": {
+          "scalar": 4.8,
+          "vector": 3.36
+        },
+        "speedup": 1.4285714285714286,
+        "vector_wins": 8
+      },
+      {
+        "rows": 262144,
+        "width": 16,
+        "input_bytes": 16777216,
+        "samples_us": {
+          "scalar": [
+            8.928,
+            8.928,
+            8.928,
+            8.912,
+            8.896,
+            8.896,
+            8.928,
+            8.896
+          ],
+          "vector": [
+            6.848,
+            6.88,
+            6.848,
+            6.848,
+            6.848,
+            6.88,
+            6.848,
+            6.848
+          ]
+        },
+        "registers": {
+          "scalar": {
+            "grouped_sum": 22
+          },
+          "vector": {
+            "grouped_sum": 22
+          }
+        },
+        "max_abs_error": 0.0,
+        "median_us": {
+          "scalar": 8.920000000000002,
+          "vector": 6.848
+        },
+        "speedup": 1.3025700934579443,
+        "vector_wins": 8
+      }
+    ]
+  },
+  "confirmation": {
+    "started_at": "2026-10-27T11:22:05.633964+00:00",
+    "compiler_sha256": "7727ee23c957e2ac5e7f0e45d20309b504ed565a6f8e6e9d1c01107531979fc4",
+    "synthetic": true,
+    "warmup": 20,
+    "iters": 200,
+    "trials": 8,
+    "cases": [
+      {
+        "rows": 4096,
+        "width": 16,
+        "input_bytes": 262144,
+        "samples_us": {
+          "scalar": [
+            4.8,
+            4.768,
+            4.768,
+            4.768,
+            4.768,
+            4.768,
+            4.768,
+            4.736
+          ],
+          "vector": [
+            3.008,
+            3.008,
+            2.976,
+            3.008,
+            3.008,
+            3.008,
+            2.976,
+            3.04
+          ]
+        },
+        "registers": {
+          "scalar": {
+            "grouped_sum": 22
+          },
+          "vector": {
+            "grouped_sum": 22
+          }
+        },
+        "max_abs_error": 0.0,
+        "median_us": {
+          "scalar": 4.768,
+          "vector": 3.008
+        },
+        "speedup": 1.5851063829787233,
+        "vector_wins": 8
+      },
+      {
+        "rows": 65536,
+        "width": 16,
+        "input_bytes": 4194304,
+        "samples_us": {
+          "scalar": [
+            4.832,
+            4.832,
+            4.832,
+            4.8,
+            4.8,
+            4.8,
+            4.832,
+            4.8
+          ],
+          "vector": [
+            3.36,
+            3.36,
+            3.328,
+            3.328,
+            3.328,
+            3.328,
+            3.328,
+            3.328
+          ]
+        },
+        "registers": {
+          "scalar": {
+            "grouped_sum": 22
+          },
+          "vector": {
+            "grouped_sum": 22
+          }
+        },
+        "max_abs_error": 0.0,
+        "median_us": {
+          "scalar": 4.816,
+          "vector": 3.328
+        },
+        "speedup": 1.4471153846153846,
+        "vector_wins": 8
+      },
+      {
+        "rows": 262144,
+        "width": 16,
+        "input_bytes": 16777216,
+        "samples_us": {
+          "scalar": [
+            8.896,
+            8.896,
+            8.896,
+            8.928,
+            8.928,
+            8.928,
+            8.928,
+            8.896
+          ],
+          "vector": [
+            6.848,
+            6.848,
+            6.848,
+            6.848,
+            6.848,
+            6.88,
+            6.88,
+            6.848
+          ]
+        },
+        "registers": {
+          "scalar": {
+            "grouped_sum": 22
+          },
+          "vector": {
+            "grouped_sum": 22
+          }
+        },
+        "max_abs_error": 0.0,
+        "median_us": {
+          "scalar": 8.912,
+          "vector": 6.848
+        },
+        "speedup": 1.3014018691588787,
+        "vector_wins": 8
+      }
+    ],
+    "health": {
+      "ok": true,
+      "arch_ok": true,
+      "ptxas": "/usr/local/cuda/bin/ptxas",
+      "default_arch": "sm_120",
+      "cache_dir": "/home/riftuser/.cache/ptxserver",
+      "can_compile": true,
+      "can_run": true,
+      "gpu": "NVIDIA GeForce RTX 5090 (compute capability 12.0, sm_120)"
+    },
+    "finished_at": "2026-10-27T11:24:01.021743+00:00"
+  }
+}

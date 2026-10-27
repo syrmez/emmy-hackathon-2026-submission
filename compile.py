@@ -3,6 +3,8 @@
 
 Emmy is used for typed IR loading, never CUDA rendering or PTX generation.
 Only the matching launch descriptor in adjacent meta.json is consulted.
+Global arguments must be allocation-base pointers aligned to at least 16 bytes,
+as supplied by the runner; arbitrary offset pointers are not supported.
 """
 import json
 import math
@@ -31,6 +33,8 @@ class Compiler:
         self.pointers = {}
         self.shapes = {name: tuple(d.as_static() for d in t.shape) for name, t in self.buffers.items()}
         self.shared = {}
+        # Runner arguments are CUDA allocation bases (at least 16-byte aligned).
+        self.alignments = {name: 16 for name in self.buffers}
         self.shared_bytes = 0
         self.dynamic_shared = launch["smem_bytes"] > 0
         self.declarations = []
@@ -115,6 +119,31 @@ class Compiler:
             return self.instruction("add.u32", self.pointers[name], offset, kind="r")
         offset = self.instruction("mul.wide.s32", flat, 4, kind="rd")
         return self.instruction("add.u64", self.pointers[name], offset, kind="rd")
+
+    @staticmethod
+    def index_multiple(expr):
+        """Conservative divisor of an index, capped at four f32 elements."""
+        if isinstance(expr, Literal) and expr.dtype == "int":
+            return math.gcd(4, expr.value)
+        if isinstance(expr, BinaryExpr):
+            left, right = Compiler.index_multiple(expr.left), Compiler.index_multiple(expr.right)
+            if expr.op in ("+", "-"):
+                return math.gcd(left, right)
+            if expr.op == "*":
+                return math.gcd(4, left * right)
+        if isinstance(expr, TernaryExpr):
+            return math.gcd(Compiler.index_multiple(expr.if_true), Compiler.index_multiple(expr.if_false))
+        # ponytail: unknown index arithmetic stays scalar; extend proofs if profiling warrants it.
+        return 1
+
+    def load_alignment(self, name, index):
+        multiple = 4
+        if len(index) == 1:
+            multiple = self.index_multiple(index[0])
+        else:
+            for extent, coordinate in zip(self.shapes[name], index):
+                multiple = math.gcd(multiple * extent, self.index_multiple(coordinate))
+        return math.gcd(self.alignments[name], 4 * multiple)
 
     @staticmethod
     def check_dtype(dtype):
@@ -229,9 +258,18 @@ class Compiler:
         if isinstance(stmt, Load):
             self.check_dtype(stmt.dtype)
             address = self.address(stmt.input, stmt.index)
-            # ponytail: scalarize grouped accesses; vectorize when speed matters.
-            for i, name in enumerate(stmt.names):
-                self.values[name] = self.instruction(f"ld.{self.space(stmt.input)}.f32", f"[{address}+{4 * i}]")
+            alignment = self.load_alignment(stmt.input, stmt.index)
+            i = 0
+            while i < len(stmt.names):
+                width = next(w for w in (4, 2, 1)
+                             if w <= len(stmt.names) - i and math.gcd(alignment, 4 * i) % (4 * w) == 0)
+                registers = [f"%f{self.counts['f'] + j}" for j in range(width)]
+                self.counts["f"] += width
+                self.values.update(zip(stmt.names[i:i + width], registers))
+                target = registers[0] if width == 1 else "{" + ", ".join(registers) + "}"
+                vector = "" if width == 1 else f".v{width}"
+                self.emit(f"ld.{self.space(stmt.input)}{vector}.f32 {target}, [{address}+{4 * i}];")
+                i += width
         elif isinstance(stmt, Assign):
             self.check_dtype(stmt.dtype)
             self.values[stmt.name] = self.operation(stmt.op.name, [self.values[name] for name in stmt.args])
@@ -300,6 +338,7 @@ class Compiler:
             size, align = 4 * math.prod(stmt.extents), max(4, stmt.align)
             if size <= 0 or align & (align - 1) or align > 16:
                 raise NotImplementedError("shared size/alignment is unsupported")
+            self.alignments[stmt.name] = align
             offset = (self.shared_bytes + align - 1) // align * align
             self.shared_bytes = offset + size
             if self.dynamic_shared:

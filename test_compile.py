@@ -12,10 +12,11 @@ import tempfile
 
 import numpy as np
 
-from compile import compile_file
+from compile import Compiler, compile_file
 from emmy.compiler.graph import Graph
 from emmy.compiler.ir.elementwise import ElementwiseImpl
 from emmy.compiler.ir.expr import BinaryExpr, Literal, Var
+from emmy.compiler.ir.stmt import Load
 
 ROOT = Path(__file__).resolve().parent
 
@@ -25,7 +26,53 @@ def check_remote(folder):
                     "--compiler", str(ROOT / "compile.py")], check=True)
 
 
+def check_vector_loads():
+    graph = Graph.from_dict(json.loads(next((ROOT / "problems/p00_scalar_add").glob("*.ir.json")).read_text()))
+    a = Var("i")
+    # Exact widths and offsets: no over-read on tails, no vector on unknown alignment.
+    cases = [
+        ((), 4, [4]),
+        ((a * 4,), 4, [4]),
+        ((a * 2,), 4, [2, 2]),
+        ((a,), 4, [1, 1, 1, 1]),
+        ((a * 4 + 1,), 4, [1, 1, 1, 1]),
+        ((Literal(2, "int"),), 4, [2, 2]),
+        ((a * 4,), 1, [1]),
+        ((a * 4,), 3, [2, 1]),
+        ((a * 4,), 7, [4, 2, 1]),
+        ((a * 4,), 8, [4, 4]),
+        ((a, Literal(0, "int")), 4, [4]),
+    ]
+    for shared, alignment in ((False, 16), (True, 4), (True, 8), (True, 16)):
+        for index, count, widths in cases:
+            compiler = Compiler(graph, None, {"smem_bytes": 0})
+            compiler.indices["i"] = "%r99"
+            compiler.pointers["x0"] = "%r98" if shared else "%rd99"
+            compiler.shapes["x0"] = (8, 16)
+            compiler.alignments["x0"] = alignment
+            if shared:
+                compiler.shared["x0"] = "shared_test"
+            names = tuple(f"value{j}" for j in range(count))
+            compiler.statement(Load(input="x0", index=index, names=names))
+            expected_widths = [min(w, alignment // 4) for w in widths
+                               for _ in range(max(1, w // (alignment // 4)))]
+            loads = [line.strip() for line in compiler.lines if line.strip().startswith("ld.")]
+            address = loads[0].split("[")[1].split("+")[0]
+            expected = []
+            offset = 0
+            for width in expected_widths:
+                regs = [f"%f{j}" for j in range(offset, offset + width)]
+                target = regs[0] if width == 1 else "{" + ", ".join(regs) + "}"
+                vector = "" if width == 1 else f".v{width}"
+                expected.append(f"ld.{compiler.space('x0')}{vector}.f32 {target}, [{address}+{offset * 4}];")
+                offset += width
+            assert loads == expected, (index, alignment, loads, expected)
+            assert list(compiler.values.values()) == [f"%f{j}" for j in range(count)]
+    print("PASS: vector load widths, register bindings, offsets, tails, and alignment fallbacks", flush=True)
+
+
 def main(remote=False):
+    check_vector_loads()
     folders = sorted(p.parent for p in (ROOT / "problems").glob("*/meta.json"))
     folders += sorted((ROOT / "local_problems").glob("v*"))
     for folder in folders:
@@ -76,6 +123,7 @@ def main(remote=False):
         (folder / "meta.json").write_text(json.dumps(meta))
         ptx = compile_file(ir)
         assert f".entry {name}(" in ptx
+        assert ptx.count("ld.global.v2.f32") == 2
         # Actual first buffer loaded is x0, now third in the signature: %rd5.
         first_address = next(line for line in ptx.splitlines() if "add.u64" in line)
         assert ", %rd5," in first_address
