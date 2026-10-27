@@ -1,0 +1,1432 @@
+{
+  "started_at": "2026-10-27T21:20:59.993589+00:00",
+  "compiler_sha256": "de93a1a6260fc420ad409fa3c618ba03d99c74cf8c6ed256a1d995cbfb5511ce",
+  "python": "3.12.4",
+  "host": "macOS-14.5-arm64-arm-64bit",
+  "gpu": "NVIDIA GeForce RTX 5090 (compute capability 12.0, sm_120)",
+  "arch": "sm_120",
+  "server": "http://runner.riftstack.ai:48701",
+  "trials": 3,
+  "warmup": 10,
+  "iters": 100,
+  "rows": [
+    {
+      "problem": "a01_attention",
+      "dataset": "public",
+      "category": "Attention",
+      "status": "pass",
+      "gpu_us": 98.848,
+      "compile_ms": 136.46016700658947,
+      "registers": 140,
+      "error": null,
+      "expression": "q = torch.randn(64, 64); kt = torch.randn(64, 64); v = torch.randn(64, 64); torch.softmax(q @ kt / 8.0, dim=-1) @ v",
+      "grid": [
+        4,
+        1,
+        1
+      ],
+      "block": [
+        128,
+        1,
+        1
+      ],
+      "smem_bytes": 0,
+      "entry": "k_matmul_softmax_reduce_b55365",
+      "compile_samples_ms": [
+        147.13954203762114,
+        134.77037497796118,
+        136.46016700658947
+      ],
+      "ptx_bytes": 14984,
+      "ptx_sha256": "a9585e6dffd18839928ee35ae160e9ddfe99fda23c11ebc3f4d803ddd502697e",
+      "gpu_samples_us": [
+        98.848,
+        98.848,
+        98.848
+      ],
+      "max_abs_error": 6.556510925292969e-07
+    },
+    {
+      "problem": "a02_attention_128",
+      "dataset": "public",
+      "category": "Attention",
+      "status": "pass",
+      "gpu_us": 68.128,
+      "compile_ms": 130.84958400577307,
+      "registers": 56,
+      "error": null,
+      "expression": "q = torch.randn(128, 32); kt = torch.randn(32, 128); v = torch.randn(128, 32); torch.softmax(q @ kt / 5.656854, dim=-1) @ v",
+      "grid": [
+        128,
+        1,
+        1
+      ],
+      "block": [
+        32,
+        1,
+        1
+      ],
+      "smem_bytes": 0,
+      "entry": "k_matmul_softmax_reduce_6f0029",
+      "compile_samples_ms": [
+        158.63979200366884,
+        128.69116698857397,
+        130.84958400577307
+      ],
+      "ptx_bytes": 3694,
+      "ptx_sha256": "8646ad9a00f0ebee14c14cac03ebb9668920ab83764ba173644595308adb2703",
+      "gpu_samples_us": [
+        68.128,
+        68.144,
+        68.128
+      ],
+      "max_abs_error": 4.76837158203125e-07
+    },
+    {
+      "problem": "f01_rmsnorm",
+      "dataset": "public",
+      "category": "Fused",
+      "status": "pass",
+      "gpu_us": 5.184,
+      "compile_ms": 128.50995804183185,
+      "registers": 21,
+      "error": null,
+      "expression": "x = torch.randn(64, 1024); w = torch.randn(1024); x / torch.sqrt((x * x).mean(-1, keepdim=True) + 1e-5) * w",
+      "grid": [
+        64,
+        1,
+        1
+      ],
+      "block": [
+        128,
+        1,
+        1
+      ],
+      "smem_bytes": 0,
+      "entry": "k_mean_cbd1de",
+      "compile_samples_ms": [
+        162.00912499334663,
+        128.04812495596707,
+        128.50995804183185
+      ],
+      "ptx_bytes": 4709,
+      "ptx_sha256": "8ce9c7c0ef5372577406ed865f2ab2134cacbae4285897e18fa72fd3154d3aaf",
+      "gpu_samples_us": [
+        5.184,
+        6.48,
+        4.672
+      ],
+      "max_abs_error": 1.9073486328125e-06
+    },
+    {
+      "problem": "f02_row_softmax",
+      "dataset": "public",
+      "category": "Fused",
+      "status": "pass",
+      "gpu_us": 3.072,
+      "compile_ms": 148.44920800533146,
+      "registers": 21,
+      "error": null,
+      "expression": "torch.softmax(torch.randn(64, 256), dim=-1)",
+      "grid": [
+        64,
+        1,
+        1
+      ],
+      "block": [
+        128,
+        1,
+        1
+      ],
+      "smem_bytes": 0,
+      "entry": "k_softmax_05263d",
+      "compile_samples_ms": [
+        174.384375102818,
+        148.44920800533146,
+        135.62708301469684
+      ],
+      "ptx_bytes": 8380,
+      "ptx_sha256": "b2aacd96bd76a130cc83868d21d9a79eb90425fa91e0782a20374d00f6905254",
+      "gpu_samples_us": [
+        3.072,
+        3.072,
+        3.04
+      ],
+      "max_abs_error": 7.450580596923828e-09
+    },
+    {
+      "problem": "f03_l2norm",
+      "dataset": "public",
+      "category": "Fused",
+      "status": "pass",
+      "gpu_us": 3.04,
+      "compile_ms": 131.3055419595912,
+      "registers": 20,
+      "error": null,
+      "expression": "x = torch.randn(64, 512); x / torch.sqrt((x * x).sum(-1, keepdim=True))",
+      "grid": [
+        64,
+        1,
+        1
+      ],
+      "block": [
+        128,
+        1,
+        1
+      ],
+      "smem_bytes": 0,
+      "entry": "k_div_reduce",
+      "compile_samples_ms": [
+        165.10374995414168,
+        131.3055419595912,
+        129.8232499975711
+      ],
+      "ptx_bytes": 3977,
+      "ptx_sha256": "15b6d365b3b54e3c25f299d11e0c887052b35cb02cfcfcd1a1293347dc878ef9",
+      "gpu_samples_us": [
+        3.04,
+        3.04,
+        3.04
+      ],
+      "max_abs_error": 1.4901161193847656e-08
+    },
+    {
+      "problem": "m01_matmul_512",
+      "dataset": "public",
+      "category": "Matmul",
+      "status": "pass",
+      "gpu_us": 152.064,
+      "compile_ms": 137.75116601027548,
+      "registers": 40,
+      "error": null,
+      "expression": "torch.randn(512, 512) @ torch.randn(512, 512)",
+      "grid": [
+        128,
+        1,
+        1
+      ],
+      "block": [
+        512,
+        1,
+        1
+      ],
+      "smem_bytes": 73728,
+      "entry": "k_matmul_2967be",
+      "compile_samples_ms": [
+        156.86070802621543,
+        137.75116601027548,
+        131.79424998816103
+      ],
+      "ptx_bytes": 28972,
+      "ptx_sha256": "31322164d0c5b61014a55e2dc509765c830a435461ef58a3e7ceb8b773e8eba6",
+      "gpu_samples_us": [
+        152.096,
+        152.064,
+        152.064
+      ],
+      "max_abs_error": 8.7738037109375e-05
+    },
+    {
+      "problem": "m02_matmul_rect",
+      "dataset": "public",
+      "category": "Matmul",
+      "status": "pass",
+      "gpu_us": 4.864,
+      "compile_ms": 130.4714169818908,
+      "registers": 31,
+      "error": null,
+      "expression": "torch.randn(128, 256) @ torch.randn(256, 64)",
+      "grid": [
+        512,
+        1,
+        1
+      ],
+      "block": [
+        256,
+        1,
+        1
+      ],
+      "smem_bytes": 0,
+      "entry": "k_matmul",
+      "compile_samples_ms": [
+        189.25687507726252,
+        129.82945900876075,
+        130.4714169818908
+      ],
+      "ptx_bytes": 7760,
+      "ptx_sha256": "b72dd39d309f788322eb17a145ea92115c89ea11645c71b3ceeb399be2123702",
+      "gpu_samples_us": [
+        4.896,
+        4.832,
+        4.864
+      ],
+      "max_abs_error": 1.1444091796875e-05
+    },
+    {
+      "problem": "p00_scalar_add",
+      "dataset": "public",
+      "category": "Pointwise",
+      "status": "pass",
+      "gpu_us": 3.04,
+      "compile_ms": 132.19775003381073,
+      "registers": 18,
+      "error": null,
+      "expression": "torch.randn(128) + torch.randn(128)",
+      "grid": [
+        1,
+        1,
+        1
+      ],
+      "block": [
+        256,
+        1,
+        1
+      ],
+      "smem_bytes": 0,
+      "entry": "k_add_pointwise",
+      "compile_samples_ms": [
+        164.07049994450063,
+        129.79254103265703,
+        132.19775003381073
+      ],
+      "ptx_bytes": 1594,
+      "ptx_sha256": "c03239d820643c55d93497dd01a61982e4741eefb876c6b3a33e83eef1635297",
+      "gpu_samples_us": [
+        3.04,
+        3.008,
+        3.072
+      ],
+      "max_abs_error": 0.0
+    },
+    {
+      "problem": "p01_vector_add",
+      "dataset": "public",
+      "category": "Pointwise",
+      "status": "pass",
+      "gpu_us": 3.056,
+      "compile_ms": 128.14216606784612,
+      "registers": 18,
+      "error": null,
+      "expression": "torch.randn(1024) + torch.randn(1024)",
+      "grid": [
+        2,
+        1,
+        1
+      ],
+      "block": [
+        256,
+        1,
+        1
+      ],
+      "smem_bytes": 0,
+      "entry": "k_add_pointwise",
+      "compile_samples_ms": [
+        156.0118329944089,
+        127.10020807571709,
+        128.14216606784612
+      ],
+      "ptx_bytes": 1597,
+      "ptx_sha256": "23c46e3efe34176f1d0685dd5b963befc20c6b128bcda6c181c0cbf240628835",
+      "gpu_samples_us": [
+        3.04,
+        3.056,
+        3.072
+      ],
+      "max_abs_error": 0.0
+    },
+    {
+      "problem": "p02_scale_shift",
+      "dataset": "public",
+      "category": "Pointwise",
+      "status": "pass",
+      "gpu_us": 3.104,
+      "compile_ms": 128.20820801425725,
+      "registers": 21,
+      "error": null,
+      "expression": "torch.randn(4096) * 2.0 + 1.0",
+      "grid": [
+        4,
+        1,
+        1
+      ],
+      "block": [
+        256,
+        1,
+        1
+      ],
+      "smem_bytes": 0,
+      "entry": "k_add_pointwise",
+      "compile_samples_ms": [
+        165.29212496243417,
+        126.4929580502212,
+        128.20820801425725
+      ],
+      "ptx_bytes": 2736,
+      "ptx_sha256": "55baff253fd745d2c3aeaf77e1823340fa7db43acbdca55716e6f174c94e107d",
+      "gpu_samples_us": [
+        3.136,
+        3.104,
+        3.104
+      ],
+      "max_abs_error": 0.0
+    },
+    {
+      "problem": "p03_relu_mul",
+      "dataset": "public",
+      "category": "Pointwise",
+      "status": "pass",
+      "gpu_us": 3.072,
+      "compile_ms": 127.34324997290969,
+      "registers": 22,
+      "error": null,
+      "expression": "x = torch.randn(2048); y = torch.randn(2048); torch.relu(x) * y",
+      "grid": [
+        2,
+        1,
+        1
+      ],
+      "block": [
+        256,
+        1,
+        1
+      ],
+      "smem_bytes": 0,
+      "entry": "k_mul_pointwise",
+      "compile_samples_ms": [
+        165.65474995877594,
+        126.28075003158301,
+        127.34324997290969
+      ],
+      "ptx_bytes": 2511,
+      "ptx_sha256": "b3cb53f449454140b7578328761f730eaf25b0e8640eb1f0b68c4a8f35436c84",
+      "gpu_samples_us": [
+        3.072,
+        3.072,
+        3.04
+      ],
+      "max_abs_error": 0.0
+    },
+    {
+      "problem": "r01_array_sum",
+      "dataset": "public",
+      "category": "Reduction",
+      "status": "pass",
+      "gpu_us": 3.072,
+      "compile_ms": 157.4020420666784,
+      "registers": 19,
+      "error": null,
+      "expression": "torch.randn(1024).sum()",
+      "grid": [
+        1,
+        1,
+        1
+      ],
+      "block": [
+        128,
+        1,
+        1
+      ],
+      "smem_bytes": 0,
+      "entry": "k_sum_1_reduce",
+      "compile_samples_ms": [
+        170.48450000584126,
+        157.4020420666784,
+        129.15204209275544
+      ],
+      "ptx_bytes": 3273,
+      "ptx_sha256": "4402fd145da1e0f8e62eed5b168645bb6fc0de44aa82fe05d2aad430f0a31c24",
+      "gpu_samples_us": [
+        3.072,
+        3.072,
+        3.04
+      ],
+      "max_abs_error": 3.814697265625e-06
+    },
+    {
+      "problem": "r02_big_sum",
+      "dataset": "public",
+      "category": "Reduction",
+      "status": "pass",
+      "gpu_us": 21.024,
+      "compile_ms": 128.43174999579787,
+      "registers": 19,
+      "error": null,
+      "expression": "torch.randn(65536).sum()",
+      "grid": [
+        1,
+        1,
+        1
+      ],
+      "block": [
+        128,
+        1,
+        1
+      ],
+      "smem_bytes": 0,
+      "entry": "k_sum_1_reduce",
+      "compile_samples_ms": [
+        169.86720799468458,
+        127.05366697628051,
+        128.43174999579787
+      ],
+      "ptx_bytes": 3274,
+      "ptx_sha256": "f3fdc2c1b9dc1f5ca8216fefc48ce1b757be7db49d1f7f2a93f9181a8e4bf19a",
+      "gpu_samples_us": [
+        21.024,
+        21.024,
+        21.024
+      ],
+      "max_abs_error": 1.52587890625e-05
+    },
+    {
+      "problem": "r03_mean",
+      "dataset": "public",
+      "category": "Reduction",
+      "status": "pass",
+      "gpu_us": 12.832,
+      "compile_ms": 131.6431249724701,
+      "registers": 19,
+      "error": null,
+      "expression": "torch.randn(32768).mean()",
+      "grid": [
+        1,
+        1,
+        1
+      ],
+      "block": [
+        128,
+        1,
+        1
+      ],
+      "smem_bytes": 0,
+      "entry": "k_mean_ffcca3",
+      "compile_samples_ms": [
+        168.12199994456023,
+        131.5214999485761,
+        131.6431249724701
+      ],
+      "ptx_bytes": 3498,
+      "ptx_sha256": "de2295eb83089500089e09ca85d0cf86728589259c7d8cecad26acfb7f4fe166",
+      "gpu_samples_us": [
+        12.832,
+        12.832,
+        12.8
+      ],
+      "max_abs_error": 9.313225746154785e-10
+    },
+    {
+      "problem": "r04_row_sum",
+      "dataset": "public",
+      "category": "Reduction",
+      "status": "pass",
+      "gpu_us": 3.04,
+      "compile_ms": 128.3076669787988,
+      "registers": 20,
+      "error": null,
+      "expression": "torch.randn(64, 512).sum(-1)",
+      "grid": [
+        64,
+        1,
+        1
+      ],
+      "block": [
+        128,
+        1,
+        1
+      ],
+      "smem_bytes": 0,
+      "entry": "k_sum_1_reduce",
+      "compile_samples_ms": [
+        169.71079201903194,
+        127.64508300460875,
+        128.3076669787988
+      ],
+      "ptx_bytes": 3457,
+      "ptx_sha256": "212d87e499137d1394dd3a694a18fd2f9ce6569b549aeded8a1846f308a61c88",
+      "gpu_samples_us": [
+        3.04,
+        3.04,
+        3.04
+      ],
+      "max_abs_error": 5.7220458984375e-06
+    },
+    {
+      "problem": "v01_single",
+      "dataset": "generated",
+      "category": "Generated",
+      "status": "pass",
+      "gpu_us": 3.072,
+      "compile_ms": 128.1510420376435,
+      "registers": 12,
+      "error": null,
+      "expression": "torch.randn(1) + torch.randn(1)",
+      "grid": [
+        1,
+        1,
+        1
+      ],
+      "block": [
+        256,
+        1,
+        1
+      ],
+      "smem_bytes": 0,
+      "entry": "k_add_pointwise",
+      "compile_samples_ms": [
+        161.25250002369285,
+        127.1234160521999,
+        128.1510420376435
+      ],
+      "ptx_bytes": 993,
+      "ptx_sha256": "33561b20ac595c847a576fad90db703ad393f7d140e1a86afbc416cc0fd6bb13",
+      "gpu_samples_us": [
+        3.04,
+        3.104,
+        3.072
+      ],
+      "max_abs_error": 0.0
+    },
+    {
+      "problem": "v02_odd_product",
+      "dataset": "generated",
+      "category": "Generated",
+      "status": "pass",
+      "gpu_us": 3.136,
+      "compile_ms": 131.12912490032613,
+      "registers": 14,
+      "error": null,
+      "expression": "torch.randn(127) * torch.randn(127) - 2.25",
+      "grid": [
+        1,
+        1,
+        1
+      ],
+      "block": [
+        256,
+        1,
+        1
+      ],
+      "smem_bytes": 0,
+      "entry": "k_sub_pointwise",
+      "compile_samples_ms": [
+        166.9962500454858,
+        131.12912490032613,
+        128.93258302938193
+      ],
+      "ptx_bytes": 1279,
+      "ptx_sha256": "e9e145378a07a0e93da5c1512f3e9eca14b257027b475791049dd0bd8df48d80",
+      "gpu_samples_us": [
+        3.104,
+        3.136,
+        3.168
+      ],
+      "max_abs_error": 0.0
+    },
+    {
+      "problem": "v03_block_tail",
+      "dataset": "generated",
+      "category": "Generated",
+      "status": "pass",
+      "gpu_us": 3.072,
+      "compile_ms": 128.8767079822719,
+      "registers": 12,
+      "error": null,
+      "expression": "torch.randn(257) + torch.randn(257)",
+      "grid": [
+        2,
+        1,
+        1
+      ],
+      "block": [
+        256,
+        1,
+        1
+      ],
+      "smem_bytes": 0,
+      "entry": "k_add_pointwise",
+      "compile_samples_ms": [
+        168.46029192674905,
+        127.61674995999783,
+        128.8767079822719
+      ],
+      "ptx_bytes": 1055,
+      "ptx_sha256": "946beca761466b432e285be58d08d677abf9c9448e7c8a24073aa97aef676f6a",
+      "gpu_samples_us": [
+        3.04,
+        3.072,
+        3.072
+      ],
+      "max_abs_error": 0.0
+    },
+    {
+      "problem": "v04_relu_tail",
+      "dataset": "generated",
+      "category": "Generated",
+      "status": "pass",
+      "gpu_us": 3.104,
+      "compile_ms": 128.9975829422474,
+      "registers": 14,
+      "error": null,
+      "expression": "torch.relu(torch.randn(1031) * 1.25 - 0.375)",
+      "grid": [
+        5,
+        1,
+        1
+      ],
+      "block": [
+        256,
+        1,
+        1
+      ],
+      "smem_bytes": 0,
+      "entry": "k_relu_pointwise",
+      "compile_samples_ms": [
+        185.02475006971508,
+        128.64841695409268,
+        128.9975829422474
+      ],
+      "ptx_bytes": 1319,
+      "ptx_sha256": "698f69cbe5af08a49319d50067630bcfab3984e88f9594f6278cdfb4c86be487",
+      "gpu_samples_us": [
+        3.104,
+        3.168,
+        3.104
+      ],
+      "max_abs_error": 0.0
+    },
+    {
+      "problem": "v05_broadcast",
+      "dataset": "generated",
+      "category": "Generated",
+      "status": "pass",
+      "gpu_us": 3.04,
+      "compile_ms": 130.49087498802692,
+      "registers": 12,
+      "error": null,
+      "expression": "torch.randn(13, 37) + torch.randn(37)",
+      "grid": [
+        2,
+        1,
+        1
+      ],
+      "block": [
+        256,
+        1,
+        1
+      ],
+      "smem_bytes": 0,
+      "entry": "k_add_pointwise",
+      "compile_samples_ms": [
+        166.2530000321567,
+        130.49087498802692,
+        129.43479092791677
+      ],
+      "ptx_bytes": 1342,
+      "ptx_sha256": "f8f7d72d77b7495bb379b9334087601a78392a9f3cf0ca58787a9de7f2ada2ac",
+      "gpu_samples_us": [
+        3.056,
+        3.04,
+        3.04
+      ],
+      "max_abs_error": 0.0
+    },
+    {
+      "problem": "v06_sqrt_div",
+      "dataset": "generated",
+      "category": "Generated",
+      "status": "pass",
+      "gpu_us": 3.104,
+      "compile_ms": 129.60266589652747,
+      "registers": 17,
+      "error": null,
+      "expression": "x = torch.randn(513); x / torch.sqrt(x * x + 0.5)",
+      "grid": [
+        1,
+        1,
+        1
+      ],
+      "block": [
+        256,
+        1,
+        1
+      ],
+      "smem_bytes": 0,
+      "entry": "k_div_pointwise",
+      "compile_samples_ms": [
+        166.75854194909334,
+        127.99154198728502,
+        129.60266589652747
+      ],
+      "ptx_bytes": 2313,
+      "ptx_sha256": "e8686c1394260568661d4c08f2b7387c664cf866a34449bd40872659a42c40b2",
+      "gpu_samples_us": [
+        3.104,
+        3.104,
+        3.056
+      ],
+      "max_abs_error": 0.0
+    },
+    {
+      "problem": "v07_large_sub",
+      "dataset": "generated",
+      "category": "Generated",
+      "status": "pass",
+      "gpu_us": 3.088,
+      "compile_ms": 131.03008293546736,
+      "registers": 30,
+      "error": null,
+      "expression": "torch.randn(8193) - torch.randn(8193)",
+      "grid": [
+        11,
+        1,
+        1
+      ],
+      "block": [
+        256,
+        1,
+        1
+      ],
+      "smem_bytes": 0,
+      "entry": "k_sub_pointwise",
+      "compile_samples_ms": [
+        174.132207990624,
+        131.03008293546736,
+        128.58762498944998
+      ],
+      "ptx_bytes": 2216,
+      "ptx_sha256": "a52edd42e82b1abc3db27efb8c6cfbc3c5af8c55d5849f37985b29fec22b8ba8",
+      "gpu_samples_us": [
+        3.072,
+        3.088,
+        3.104
+      ],
+      "max_abs_error": 0.0
+    },
+    {
+      "problem": "v08_vector_constants",
+      "dataset": "generated",
+      "category": "Generated",
+      "status": "pass",
+      "gpu_us": 3.104,
+      "compile_ms": 127.720957971178,
+      "registers": 21,
+      "error": null,
+      "expression": "torch.randn(4096) * -1.75 + 0.125",
+      "grid": [
+        4,
+        1,
+        1
+      ],
+      "block": [
+        256,
+        1,
+        1
+      ],
+      "smem_bytes": 0,
+      "entry": "k_add_pointwise",
+      "compile_samples_ms": [
+        140.03400004003197,
+        127.36820906866342,
+        127.720957971178
+      ],
+      "ptx_bytes": 2736,
+      "ptx_sha256": "55baff253fd745d2c3aeaf77e1823340fa7db43acbdca55716e6f174c94e107d",
+      "gpu_samples_us": [
+        3.136,
+        3.104,
+        3.104
+      ],
+      "max_abs_error": 0.0
+    },
+    {
+      "problem": "v09_partial_warp",
+      "dataset": "generated",
+      "category": "Generated",
+      "status": "pass",
+      "gpu_us": 3.04,
+      "compile_ms": 134.07725002616644,
+      "registers": 16,
+      "error": null,
+      "expression": "torch.randn(7).sum()",
+      "grid": [
+        1,
+        1,
+        1
+      ],
+      "block": [
+        8,
+        1,
+        1
+      ],
+      "smem_bytes": 0,
+      "entry": "k_sum_1_reduce",
+      "compile_samples_ms": [
+        167.9880419978872,
+        126.99583300855011,
+        134.07725002616644
+      ],
+      "ptx_bytes": 1566,
+      "ptx_sha256": "1e91b65e233d4a1ff937565c2c033585afc91192a861574f3667733144da043b",
+      "gpu_samples_us": [
+        3.04,
+        3.04,
+        3.04
+      ],
+      "max_abs_error": 0.0
+    },
+    {
+      "problem": "v10_sum_tail",
+      "dataset": "generated",
+      "category": "Generated",
+      "status": "pass",
+      "gpu_us": 3.072,
+      "compile_ms": 135.7800830155611,
+      "registers": 19,
+      "error": null,
+      "expression": "torch.randn(257).sum()",
+      "grid": [
+        1,
+        1,
+        1
+      ],
+      "block": [
+        128,
+        1,
+        1
+      ],
+      "smem_bytes": 0,
+      "entry": "k_sum_1_reduce",
+      "compile_samples_ms": [
+        213.02729193121195,
+        135.7800830155611,
+        130.31999999657273
+      ],
+      "ptx_bytes": 3272,
+      "ptx_sha256": "bf89ad614f88dcc13a03f55272a492b5d75de42c062de50d635b4cbfc304f5ec",
+      "gpu_samples_us": [
+        3.04,
+        3.072,
+        3.072
+      ],
+      "max_abs_error": 1.4156103134155273e-06
+    },
+    {
+      "problem": "v11_big_sum_tail",
+      "dataset": "generated",
+      "category": "Generated",
+      "status": "pass",
+      "gpu_us": 12.832,
+      "compile_ms": 140.14262496493757,
+      "registers": 19,
+      "error": null,
+      "expression": "torch.randn(65537).sum()",
+      "grid": [
+        1,
+        1,
+        1
+      ],
+      "block": [
+        256,
+        1,
+        1
+      ],
+      "smem_bytes": 0,
+      "entry": "k_sum_1_reduce",
+      "compile_samples_ms": [
+        179.94783399626613,
+        140.14262496493757,
+        134.68520797323436
+      ],
+      "ptx_bytes": 3803,
+      "ptx_sha256": "7a3f66a5afd951ec28feec4ca092dc62ebcb72c720d3d224ca57a4a5b4cf6b9b",
+      "gpu_samples_us": [
+        12.832,
+        12.864,
+        12.832
+      ],
+      "max_abs_error": 1.52587890625e-05
+    },
+    {
+      "problem": "v12_row_sum",
+      "dataset": "generated",
+      "category": "Generated",
+      "status": "pass",
+      "gpu_us": 3.04,
+      "compile_ms": 140.28195803985,
+      "registers": 20,
+      "error": null,
+      "expression": "torch.randn(13, 259).sum(-1)",
+      "grid": [
+        13,
+        1,
+        1
+      ],
+      "block": [
+        64,
+        1,
+        1
+      ],
+      "smem_bytes": 0,
+      "entry": "k_sum_1_reduce",
+      "compile_samples_ms": [
+        163.48333295900375,
+        140.28195803985,
+        135.3705000365153
+      ],
+      "ptx_bytes": 2924,
+      "ptx_sha256": "32f20ff93b3327992363803a2c79358fe5fd701350dec12450abbdef13e90a42",
+      "gpu_samples_us": [
+        3.072,
+        3.04,
+        3.04
+      ],
+      "max_abs_error": 3.814697265625e-06
+    },
+    {
+      "problem": "v13_column_sum",
+      "dataset": "generated",
+      "category": "Generated",
+      "status": "pass",
+      "gpu_us": 3.056,
+      "compile_ms": 139.2581668915227,
+      "registers": 20,
+      "error": null,
+      "expression": "torch.randn(17, 35).sum(0)",
+      "grid": [
+        35,
+        1,
+        1
+      ],
+      "block": [
+        128,
+        1,
+        1
+      ],
+      "smem_bytes": 0,
+      "entry": "k_sum_1_reduce",
+      "compile_samples_ms": [
+        168.04795898497105,
+        130.2618330810219,
+        139.2581668915227
+      ],
+      "ptx_bytes": 3455,
+      "ptx_sha256": "421ce1479925e33ce0444dae5dd18f973c1d45e459cd958149d3085369faa901",
+      "gpu_samples_us": [
+        3.04,
+        3.072,
+        3.056
+      ],
+      "max_abs_error": 9.5367431640625e-07
+    },
+    {
+      "problem": "v14_row_mean",
+      "dataset": "generated",
+      "category": "Generated",
+      "status": "pass",
+      "gpu_us": 3.136,
+      "compile_ms": 138.60604097135365,
+      "registers": 20,
+      "error": null,
+      "expression": "torch.randn(5, 513).mean(-1)",
+      "grid": [
+        5,
+        1,
+        1
+      ],
+      "block": [
+        128,
+        1,
+        1
+      ],
+      "smem_bytes": 0,
+      "entry": "k_mean_efb787",
+      "compile_samples_ms": [
+        192.54399999044836,
+        138.60604097135365,
+        131.36983301956207
+      ],
+      "ptx_bytes": 3716,
+      "ptx_sha256": "0f1af21c22bd0683e109f9c89a7b242ddd3eb41f39caa429f26942de6b705e35",
+      "gpu_samples_us": [
+        3.136,
+        3.104,
+        3.136
+      ],
+      "max_abs_error": 3.725290298461914e-09
+    },
+    {
+      "problem": "v15_row_max",
+      "dataset": "generated",
+      "category": "Generated",
+      "status": "pass",
+      "gpu_us": 3.04,
+      "compile_ms": 133.15483299084008,
+      "registers": 18,
+      "error": null,
+      "expression": "torch.randn(6, 97).amax(-1)",
+      "grid": [
+        6,
+        1,
+        1
+      ],
+      "block": [
+        32,
+        1,
+        1
+      ],
+      "smem_bytes": 0,
+      "entry": "k_amax_reduce",
+      "compile_samples_ms": [
+        143.65666697267443,
+        129.96591697447002,
+        133.15483299084008
+      ],
+      "ptx_bytes": 2059,
+      "ptx_sha256": "5245ffe16e431b21d99446b6a132aa35d162726dc5bbfea6e36b25547b9a62da",
+      "gpu_samples_us": [
+        3.04,
+        3.072,
+        3.04
+      ],
+      "max_abs_error": 0.0
+    },
+    {
+      "problem": "v16_row_squares",
+      "dataset": "generated",
+      "category": "Generated",
+      "status": "pass",
+      "gpu_us": 3.04,
+      "compile_ms": 135.87883301079273,
+      "registers": 20,
+      "error": null,
+      "expression": "x = torch.randn(7, 47); (x * x).sum(-1)",
+      "grid": [
+        7,
+        1,
+        1
+      ],
+      "block": [
+        128,
+        1,
+        1
+      ],
+      "smem_bytes": 0,
+      "entry": "k_sum_1_reduce",
+      "compile_samples_ms": [
+        169.8124170070514,
+        135.87883301079273,
+        131.71941705513746
+      ],
+      "ptx_bytes": 3483,
+      "ptx_sha256": "482757bb092b724909b8f3c0f4e95138be6fbbb2038ddde223e80250dc90d4e6",
+      "gpu_samples_us": [
+        3.04,
+        3.04,
+        3.04
+      ],
+      "max_abs_error": 3.814697265625e-06
+    },
+    {
+      "problem": "v17_softmax_tail",
+      "dataset": "generated",
+      "category": "Generated",
+      "status": "pass",
+      "gpu_us": 4.64,
+      "compile_ms": 130.20995806436986,
+      "registers": 21,
+      "error": null,
+      "expression": "torch.softmax(torch.randn(7, 259), dim=-1)",
+      "grid": [
+        7,
+        1,
+        1
+      ],
+      "block": [
+        128,
+        1,
+        1
+      ],
+      "smem_bytes": 0,
+      "entry": "k_softmax_0c47eb",
+      "compile_samples_ms": [
+        161.75166703760624,
+        129.70158399548382,
+        130.20995806436986
+      ],
+      "ptx_bytes": 8374,
+      "ptx_sha256": "b9e10515cc07f580e50ccc1f63bcab3165c44ba79d3c01348158c35221a77bc1",
+      "gpu_samples_us": [
+        4.64,
+        4.608,
+        4.64
+      ],
+      "max_abs_error": 3.725290298461914e-09
+    },
+    {
+      "problem": "v18_rms_tail",
+      "dataset": "generated",
+      "category": "Generated",
+      "status": "pass",
+      "gpu_us": 6.624,
+      "compile_ms": 129.5350829605013,
+      "registers": 21,
+      "error": null,
+      "expression": "x = torch.randn(3, 513); w = torch.randn(513); x / torch.sqrt((x * x).mean(-1, keepdim=True) + 1e-5) * w",
+      "grid": [
+        3,
+        1,
+        1
+      ],
+      "block": [
+        64,
+        1,
+        1
+      ],
+      "smem_bytes": 0,
+      "entry": "k_mean_e4a2ae",
+      "compile_samples_ms": [
+        167.5481660058722,
+        129.5350829605013,
+        129.4367089867592
+      ],
+      "ptx_bytes": 4165,
+      "ptx_sha256": "c1725a5afcc565859a5a4019f30ab482b37cfe5592ce20b236b846f6f181947f",
+      "gpu_samples_us": [
+        6.624,
+        6.528,
+        6.624
+      ],
+      "max_abs_error": 4.76837158203125e-07
+    },
+    {
+      "problem": "v19_l2_small_warp",
+      "dataset": "generated",
+      "category": "Generated",
+      "status": "pass",
+      "gpu_us": 4.608,
+      "compile_ms": 129.27199993282557,
+      "registers": 20,
+      "error": null,
+      "expression": "x = torch.randn(5, 97); x / torch.sqrt((x * x).sum(-1, keepdim=True))",
+      "grid": [
+        5,
+        1,
+        1
+      ],
+      "block": [
+        8,
+        1,
+        1
+      ],
+      "smem_bytes": 0,
+      "entry": "k_div_reduce",
+      "compile_samples_ms": [
+        159.39466701820493,
+        127.61691701598465,
+        129.27199993282557
+      ],
+      "ptx_bytes": 2258,
+      "ptx_sha256": "d4759f81d691765bdea3db9e0137d7e7d87099d386323379065caa6ef1f150e4",
+      "gpu_samples_us": [
+        4.608,
+        4.608,
+        4.608
+      ],
+      "max_abs_error": 2.9802322387695312e-08
+    },
+    {
+      "problem": "v20_max",
+      "dataset": "generated",
+      "category": "Generated",
+      "status": "pass",
+      "gpu_us": 3.04,
+      "compile_ms": 143.0158750154078,
+      "registers": 19,
+      "error": null,
+      "expression": "torch.randn(1043).amax()",
+      "grid": [
+        1,
+        1,
+        1
+      ],
+      "block": [
+        256,
+        1,
+        1
+      ],
+      "smem_bytes": 0,
+      "entry": "k_amax_reduce",
+      "compile_samples_ms": [
+        162.66675002407283,
+        143.0158750154078,
+        141.70470891986042
+      ],
+      "ptx_bytes": 3810,
+      "ptx_sha256": "8c2f704d143a04d9e3e14f21f9869f8fc0afcadb43369810fa8a289272242af9",
+      "gpu_samples_us": [
+        3.04,
+        3.04,
+        3.04
+      ],
+      "max_abs_error": 0.0
+    },
+    {
+      "problem": "v21_matmul_rect",
+      "dataset": "generated",
+      "category": "Generated",
+      "status": "pass",
+      "gpu_us": 4.64,
+      "compile_ms": 132.1553330635652,
+      "registers": 32,
+      "error": null,
+      "expression": "torch.randn(24, 40) @ torch.randn(40, 20)",
+      "grid": [
+        480,
+        1,
+        1
+      ],
+      "block": [
+        128,
+        1,
+        1
+      ],
+      "smem_bytes": 0,
+      "entry": "k_matmul_e1b069",
+      "compile_samples_ms": [
+        164.39745901152492,
+        132.1553330635652,
+        131.84287503827363
+      ],
+      "ptx_bytes": 3977,
+      "ptx_sha256": "858f26ca399bd5a0554dc5d420b14bda43b6ed5911233d29f78b97e06cbfdffc",
+      "gpu_samples_us": [
+        4.64,
+        4.576,
+        4.64
+      ],
+      "max_abs_error": 1.9073486328125e-06
+    },
+    {
+      "problem": "v22_matmul_tail",
+      "dataset": "generated",
+      "category": "Generated",
+      "status": "pass",
+      "gpu_us": 16.896,
+      "compile_ms": 131.8021669285372,
+      "registers": 62,
+      "error": null,
+      "expression": "torch.randn(13, 17) @ torch.randn(17, 19)",
+      "grid": [
+        1,
+        1,
+        1
+      ],
+      "block": [
+        1024,
+        1,
+        1
+      ],
+      "smem_bytes": 0,
+      "entry": "k_matmul_17dc19",
+      "compile_samples_ms": [
+        163.4855419397354,
+        130.6770839728415,
+        131.8021669285372
+      ],
+      "ptx_bytes": 15257,
+      "ptx_sha256": "8323075c01408d81b698719b0d1fc32f607bb918f8fae4d7b82a8c9cb82d0aba",
+      "gpu_samples_us": [
+        16.896,
+        16.896,
+        16.928
+      ],
+      "max_abs_error": 1.9073486328125e-06
+    },
+    {
+      "problem": "v23_attention_rect",
+      "dataset": "generated",
+      "category": "Generated",
+      "status": "pass",
+      "gpu_us": 3.232,
+      "compile_ms": 129.73820802289993,
+      "registers": 40,
+      "error": null,
+      "expression": "q = torch.randn(12, 8); kt = torch.randn(8, 20); v = torch.randn(20, 6); torch.softmax(q @ kt / 2.828427, dim=-1) @ v",
+      "grid": [
+        72,
+        1,
+        1
+      ],
+      "block": [
+        32,
+        1,
+        1
+      ],
+      "smem_bytes": 0,
+      "entry": "k_matmul_softmax_reduce_1e98bc",
+      "compile_samples_ms": [
+        162.25558298174292,
+        128.55500006116927,
+        129.73820802289993
+      ],
+      "ptx_bytes": 7387,
+      "ptx_sha256": "c214e6319dadf95caca5289e5639213ecabbdabdbee2a636c24f42ef4edf7f03",
+      "gpu_samples_us": [
+        3.232,
+        3.232,
+        3.232
+      ],
+      "max_abs_error": 8.940696716308594e-08
+    },
+    {
+      "problem": "v24_matmul_tiles",
+      "dataset": "generated",
+      "category": "Generated",
+      "status": "pass",
+      "gpu_us": 4.928,
+      "compile_ms": 131.42333400901407,
+      "registers": 48,
+      "error": null,
+      "expression": "torch.randn(64, 96) @ torch.randn(96, 48)",
+      "grid": [
+        64,
+        1,
+        1
+      ],
+      "block": [
+        128,
+        1,
+        1
+      ],
+      "smem_bytes": 0,
+      "entry": "k_matmul",
+      "compile_samples_ms": [
+        164.61720794904977,
+        130.04995801020414,
+        131.42333400901407
+      ],
+      "ptx_bytes": 12978,
+      "ptx_sha256": "03b1b52e4d08fb8c0d72f01917ee2b976c12fcaa3915968759307eb0058a4861",
+      "gpu_samples_us": [
+        4.928,
+        4.896,
+        4.96
+      ],
+      "max_abs_error": 5.7220458984375e-06
+    }
+  ],
+  "walkthrough": {
+    "cells": 64,
+    "threads": 256,
+    "elements": 128,
+    "arg_order": [
+      "x0",
+      "x1",
+      "add"
+    ],
+    "ir": "    Tile[a0] (N=64)\n        in0__u0 = load x0[((a0 * 2) + 0)]\n        in1__u0 = load x1[((a0 * 2) + 0)]\n        f32 v0__u0 = add(in0__u0, in1__u0)\n        in0__u1 = load x0[((a0 * 2) + 1)]\n        in1__u1 = load x1[((a0 * 2) + 1)]\n        f32 v0__u1 = add(in0__u1, in1__u1)\n        add[((a0 * 2) + 0)] = (v0__u0, v0__u1)",
+    "ptx": ".version 8.0\n.target sm_89\n.address_size 64\n\n.visible .entry k_add_pointwise(\n    .param .u64 param_0,\n    .param .u64 param_1,\n    .param .u64 param_2\n)\n{\n    .reg .b32 %r<18>;\n    .reg .b64 %rd<16>;\n    .reg .f32 %f<6>;\n    .reg .pred %p<1>;\n    ld.param.u64 %rd0, [param_0];\n    cvta.to.global.u64 %rd1, %rd0;\n    ld.param.u64 %rd2, [param_1];\n    cvta.to.global.u64 %rd3, %rd2;\n    ld.param.u64 %rd4, [param_2];\n    cvta.to.global.u64 %rd5, %rd4;\n    mov.u32 %r0, %ctaid.x;\n    mov.u32 %r1, %ntid.x;\n    mov.u32 %r2, %tid.x;\n    and.b32 %r3, %r2, 31;\n    shr.u32 %r4, %r2, 5;\n    mad.lo.u32 %r5, %r0, %r1, %r2;\n    setp.ge.u32 %p0, %r5, 64;\n    @%p0 bra DONE;\n    rem.u32 %r6, %r5, 64;\n    div.u32 %r7, %r5, 64;\n    mul.lo.s32 %r8, %r6, 2;\n    add.s32 %r9, %r8, 0;\n    mul.wide.s32 %rd6, %r9, 4;\n    add.u64 %rd7, %rd1, %rd6;\n    ld.global.f32 %f0, [%rd7+0];\n    mul.lo.s32 %r10, %r6, 2;\n    add.s32 %r11, %r10, 0;\n    mul.wide.s32 %rd8, %r11, 4;\n    add.u64 %rd9, %rd3, %rd8;\n    ld.global.f32 %f1, [%rd9+0];\n    add.rn.f32 %f2, %f0, %f1;\n    mul.lo.s32 %r12, %r6, 2;\n    add.s32 %r13, %r12, 1;\n    mul.wide.s32 %rd10, %r13, 4;\n    add.u64 %rd11, %rd1, %rd10;\n    ld.global.f32 %f3, [%rd11+0];\n    mul.lo.s32 %r14, %r6, 2;\n    add.s32 %r15, %r14, 1;\n    mul.wide.s32 %rd12, %r15, 4;\n    add.u64 %rd13, %rd3, %rd12;\n    ld.global.f32 %f4, [%rd13+0];\n    add.rn.f32 %f5, %f3, %f4;\n    mul.lo.s32 %r16, %r6, 2;\n    add.s32 %r17, %r16, 0;\n    mul.wide.s32 %rd14, %r17, 4;\n    add.u64 %rd15, %rd5, %rd14;\n    st.global.f32 [%rd15+0], %f2;\n    st.global.f32 [%rd15+4], %f5;\n    DONE:\n    ret;\n}\n"
+  },
+  "finished_at": "2026-10-27T21:23:25.220233+00:00",
+  "compiler_git_commit": "e14b216e53a74553b04f6caeaff60d2bb5231784"
+}
