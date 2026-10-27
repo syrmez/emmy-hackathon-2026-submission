@@ -103,6 +103,19 @@ limit may apply.
 
 The video decides prize eligibility, as described above.
 
+## Interactive MNIST compiler demo
+
+Draw a digit in a browser, run real inference through our generated PTX on the hosted GPU,
+and optionally step through the PyTorch operations, Emmy IR, PTX and intermediate tensors.
+
+```bash
+.venv/bin/python mnist/server.py
+open http://127.0.0.1:8766
+```
+
+Trained weights and IR are included; serving needs only the root requirements, not PyTorch or
+local CUDA. See [mnist/README.md](mnist/README.md) for validation, training and runtime details.
+
 ## Repo map
 
 ```

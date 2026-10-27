@@ -1,0 +1,42 @@
+{
+  "checked_at": "2026-10-26T15:18:29.647329+00:00",
+  "cases": 24,
+  "mnist_indices": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    61
+  ],
+  "mnist_correct": 21,
+  "mnist_count": 21,
+  "synthetic_count": 3,
+  "max_abs_error": {
+    "hidden": 1.430511474609375e-05,
+    "logits": 5.7220458984375e-06,
+    "probabilities": 1.7881393432617188e-07
+  },
+  "rtol": 0.0002,
+  "atol": 2e-05,
+  "compiler_sha256": "add29a956af21d598e164971ac68da014c88dee8e9164c18cb50342b836e569e",
+  "weights_sha256": "a6fdc042eb625dcbe0a5e13f21646064727bf5cebe25bb4f6d2138f948c2c7f8",
+  "pipeline_sha256": "8e8831b17d0acf35c7eb2c252ce2a4e14788cc59c4dc31c896d9161ac3a6ea57",
+  "gpu": "NVIDIA GeForce RTX 5090 (compute capability 12.0, sm_120)",
+  "runner": "http://runner.riftstack.ai:48701"
+}

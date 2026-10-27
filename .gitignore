@@ -1,8 +1,13 @@
 __pycache__/
 *.pyc
 .DS_Store
+.venv/
+local_problems/
 
 # organizer-only evaluation material
 hidden/
 hidden_full/
 expressions_hidden.py
+
+# MNIST hidden-layer kernels are demo assets, not organizer evaluation material.
+!mnist/assets/hidden/

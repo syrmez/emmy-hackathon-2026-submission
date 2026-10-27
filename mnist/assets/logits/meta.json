@@ -1,0 +1,76 @@
+{
+ "id": "logits",
+ "code": "h = torch.randn(1, 128); w = torch.randn(128, 10); b = torch.randn(10); h @ w + b",
+ "rtol": 0.001,
+ "atol": 0.0001,
+ "graph_inputs": [
+  "h",
+  "w",
+  "b"
+ ],
+ "graph_outputs": [
+  "add"
+ ],
+ "kernels": [
+  {
+   "node": "add",
+   "entry": "k_matmul_0e0635",
+   "arg_order": [
+    "b",
+    "w",
+    "h",
+    "add"
+   ],
+   "grid": [
+    10,
+    1,
+    1
+   ],
+   "block": [
+    4,
+    1,
+    1
+   ],
+   "smem_bytes": 0,
+   "zero_outputs": [],
+   "args": [
+    {
+     "name": "b",
+     "dtype": "f32",
+     "shape": [
+      10
+     ],
+     "seed": 2
+    },
+    {
+     "name": "w",
+     "dtype": "f32",
+     "shape": [
+      128,
+      10
+     ],
+     "seed": 1
+    },
+    {
+     "name": "h",
+     "dtype": "f32",
+     "shape": [
+      1,
+      128
+     ],
+     "seed": 0
+    },
+    {
+     "name": "add",
+     "dtype": "f32",
+     "shape": [
+      1,
+      10
+     ],
+     "output": true
+    }
+   ],
+   "final": true
+  }
+ ]
+}
