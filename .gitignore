@@ -2,7 +2,6 @@ __pycache__/
 *.pyc
 .DS_Store
 .venv/
-local_problems/
 
 # organizer-only evaluation material
 hidden/

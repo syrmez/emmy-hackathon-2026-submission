@@ -1,0 +1,75 @@
+{
+ "id": "v04_relu_tail",
+ "code": "torch.relu(torch.randn(1031) * 1.25 - 0.375)",
+ "rtol": 0,
+ "atol": 0,
+ "graph_inputs": [
+  "x"
+ ],
+ "graph_outputs": [
+  "relu"
+ ],
+ "kernels": [
+  {
+   "node": "relu",
+   "entry": "k_relu_pointwise",
+   "arg_order": [
+    "sub_c1",
+    "mul_c1",
+    "x",
+    "relu"
+   ],
+   "grid": [
+    5,
+    1,
+    1
+   ],
+   "block": [
+    256,
+    1,
+    1
+   ],
+   "smem_bytes": 0,
+   "zero_outputs": [],
+   "args": [
+    {
+     "name": "sub_c1",
+     "dtype": "f32",
+     "shape": [
+      1
+     ],
+     "data": [
+      0.375
+     ]
+    },
+    {
+     "name": "mul_c1",
+     "dtype": "f32",
+     "shape": [
+      1
+     ],
+     "data": [
+      1.25
+     ]
+    },
+    {
+     "name": "x",
+     "dtype": "f32",
+     "shape": [
+      1031
+     ],
+     "seed": 0
+    },
+    {
+     "name": "relu",
+     "dtype": "f32",
+     "shape": [
+      1031
+     ],
+     "output": true
+    }
+   ],
+   "final": true
+  }
+ ]
+}

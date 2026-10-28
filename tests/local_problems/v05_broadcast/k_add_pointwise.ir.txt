@@ -1,0 +1,5 @@
+    Tile[a0, a1] (N=481)
+        in0 = load x0[a0, a1]
+        in1 = load x1[a1]
+        f32 v0 = add(in0, in1)
+        add[a0, a1] = v0

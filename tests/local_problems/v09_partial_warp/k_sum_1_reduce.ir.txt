@@ -1,0 +1,7 @@
+    Tile[a0_co] (N=8)
+        for a0 in a0_co..7:8
+            in0 = load x[a0]
+            f32 acc0 <- add(acc0, in0)
+        WarpShuffle(acc0, length=8)
+        if ((a0_co == 0)):
+            sum_1[] = acc0

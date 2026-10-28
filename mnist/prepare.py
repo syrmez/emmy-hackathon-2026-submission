@@ -17,7 +17,7 @@ from torch import nn
 from torch.nn import functional as F
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "tools"))
+sys.path.insert(0, str(ROOT / "tests/tools"))
 sys.path.insert(0, str(ROOT))
 from generate import package, trace
 from compile import compile_file

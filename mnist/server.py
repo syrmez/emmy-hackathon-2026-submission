@@ -16,7 +16,7 @@ import requests
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from compile import compile_file
-from submit import RUNNER
+RUNNER = "http://runner.riftstack.ai:48701"
 
 HERE = Path(__file__).resolve().parent
 ASSETS = HERE / "assets"

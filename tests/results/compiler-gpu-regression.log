@@ -1,0 +1,83 @@
+PASS: vector load widths, register bindings, offsets, tails, and alignment fallbacks
+[k_matmul_softmax_reduce_b55365] 140 registers
+[k_matmul_softmax_reduce_b55365] PASS  matmul_1: max abs err 6.557e-07  (110.56 us)
+[k_matmul_softmax_reduce_6f0029] 56 registers
+[k_matmul_softmax_reduce_6f0029] PASS  matmul_1: max abs err 4.768e-07  (79.84 us)
+[k_mean_cbd1de] 21 registers
+[k_mean_cbd1de] PASS  mul_1: max abs err 1.907e-06  (16.64 us)
+[k_softmax_05263d] 21 registers
+[k_softmax_05263d] PASS  softmax: max abs err 7.451e-09  (16.48 us)
+[k_div_reduce] 20 registers
+[k_div_reduce] PASS  div: max abs err 1.490e-08  (15.968 us)
+[k_matmul_2967be] 40 registers
+[k_matmul_2967be] PASS  matmul: max abs err 8.774e-05  (165.184 us)
+[k_matmul] 31 registers
+[k_matmul] PASS  matmul: max abs err 1.144e-05  (24.96 us)
+[k_add_pointwise] 18 registers
+[k_add_pointwise] PASS  add: max abs err 0.000e+00  (30.976 us)
+[k_add_pointwise] 18 registers
+[k_add_pointwise] PASS  add: max abs err 0.000e+00  (23.424 us)
+[k_add_pointwise] 21 registers
+[k_add_pointwise] PASS  add: max abs err 0.000e+00  (15.84 us)
+[k_mul_pointwise] 22 registers
+[k_mul_pointwise] PASS  mul: max abs err 0.000e+00  (16.064 us)
+[k_sum_1_reduce] 19 registers
+[k_sum_1_reduce] PASS  sum_1: max abs err 3.815e-06  (24.128 us)
+[k_sum_1_reduce] 19 registers
+[k_sum_1_reduce] PASS  sum_1: max abs err 1.526e-05  (42.592 us)
+[k_mean_ffcca3] 19 registers
+[k_mean_ffcca3] PASS  mean: max abs err 9.313e-10  (31.872 us)
+[k_sum_1_reduce] 20 registers
+[k_sum_1_reduce] PASS  sum_1: max abs err 5.722e-06  (24.256 us)
+[k_add_pointwise] 12 registers
+[k_add_pointwise] PASS  add: max abs err 0.000e+00  (23.488 us)
+[k_sub_pointwise] 14 registers
+[k_sub_pointwise] PASS  sub: max abs err 0.000e+00  (24.096 us)
+[k_add_pointwise] 12 registers
+[k_add_pointwise] PASS  add: max abs err 0.000e+00  (23.328 us)
+[k_relu_pointwise] 14 registers
+[k_relu_pointwise] PASS  relu: max abs err 0.000e+00  (16.32 us)
+[k_add_pointwise] 12 registers
+[k_add_pointwise] PASS  add: max abs err 0.000e+00  (23.328 us)
+[k_div_pointwise] 17 registers
+[k_div_pointwise] PASS  div: max abs err 0.000e+00  (23.392 us)
+[k_sub_pointwise] 30 registers
+[k_sub_pointwise] PASS  sub: max abs err 0.000e+00  (16.192 us)
+[k_add_pointwise] 21 registers
+[k_add_pointwise] PASS  add: max abs err 0.000e+00  (16.32 us)
+[k_sum_1_reduce] 16 registers
+[k_sum_1_reduce] PASS  sum_1: max abs err 0.000e+00  (23.232 us)
+[k_sum_1_reduce] 19 registers
+[k_sum_1_reduce] PASS  sum_1: max abs err 1.416e-06  (23.936 us)
+[k_sum_1_reduce] 19 registers
+[k_sum_1_reduce] PASS  sum_1: max abs err 1.526e-05  (32.352 us)
+[k_sum_1_reduce] 20 registers
+[k_sum_1_reduce] PASS  sum_1: max abs err 3.815e-06  (23.264 us)
+[k_sum_1_reduce] 20 registers
+[k_sum_1_reduce] PASS  sum_1: max abs err 9.537e-07  (23.712 us)
+[k_mean_efb787] 20 registers
+[k_mean_efb787] PASS  mean: max abs err 3.725e-09  (23.456 us)
+[k_amax_reduce] 18 registers
+[k_amax_reduce] PASS  amax: max abs err 0.000e+00  (23.744 us)
+[k_sum_1_reduce] 20 registers
+[k_sum_1_reduce] PASS  sum_1: max abs err 3.815e-06  (15.04 us)
+[k_softmax_0c47eb] 21 registers
+[k_softmax_0c47eb] PASS  softmax: max abs err 3.725e-09  (15.616 us)
+[k_mean_e4a2ae] 21 registers
+[k_mean_e4a2ae] PASS  mul_1: max abs err 4.768e-07  (16.992 us)
+[k_div_reduce] 20 registers
+[k_div_reduce] PASS  div: max abs err 2.980e-08  (23.328 us)
+[k_amax_reduce] 19 registers
+[k_amax_reduce] PASS  amax: max abs err 0.000e+00  (24.672 us)
+[k_matmul_e1b069] 32 registers
+[k_matmul_e1b069] PASS  matmul: max abs err 1.907e-06  (23.808 us)
+[k_matmul_17dc19] 62 registers
+[k_matmul_17dc19] PASS  matmul: max abs err 1.907e-06  (35.616 us)
+[k_matmul_softmax_reduce_1e98bc] 40 registers
+[k_matmul_softmax_reduce_1e98bc] PASS  matmul_1: max abs err 8.941e-08  (23.648 us)
+[k_matmul] 48 registers
+[k_matmul] PASS  matmul: max abs err 7.629e-06  (16.288 us)
+PASS: compiled kernels for 39 problems
+[unseen_grouped_load] 14 registers
+[unseen_grouped_load] PASS  add: max abs err 0.000e+00  (24.896 us)
+PASS: renamed entry, reordered args, grouped loads, metadata independence, clean rejections

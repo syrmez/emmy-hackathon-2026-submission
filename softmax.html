@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark">
+<title>Softmax · a journey through the GPU</title>
+<style>
+:root{--bg:#0d1420;--panel:#151f2e;--line:#35465f;--text:#edf3fc;--muted:#b4c2d6;--green:#6ce5bd;--blue:#83b6ff;--gold:#ffcf86;--purple:#c4a1ff;--pink:#ff9d9d;--w0:#6ce5bd;--w1:#83b6ff;--w2:#c4a1ff;--w3:#ffcf86}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,sans-serif}main{max-width:1340px;margin:auto;padding:26px 22px 50px}h1{font-size:clamp(29px,4.5vw,45px);line-height:1.15;margin:12px 0}h2{font-size:21px;margin:0 0 8px}h3{font-size:16px;margin:0 0 8px}p{margin:8px 0 14px}a{color:var(--blue)}.muted,small{color:var(--muted)}.eyebrow{font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--green);font-weight:700}.intro{max-width:980px}.notice{padding-left:14px;border-left:3px solid var(--gold);font-size:13px;color:var(--muted)}.panel{border:1px solid var(--line);border-radius:14px;background:var(--panel);padding:19px;margin-top:18px}.controls{display:flex;align-items:center;flex-wrap:wrap;gap:12px}.controls label{display:flex;align-items:center;gap:7px;font-size:13px}button,select,input{font:inherit}button,select,input[type=number]{color:var(--text);background:#203049;border:1px solid #627b9e;padding:7px 10px;border-radius:7px}button{cursor:pointer}button:hover{background:#304764}button:disabled{opacity:.42;cursor:default}button.primary{background:#164c43;border-color:var(--green)}input[type=number]{width:100px}input[type=range]{accent-color:var(--green);min-width:100px}select{max-width:100%}:focus-visible{outline:3px solid var(--gold);outline-offset:3px}.transport{position:sticky;top:0;z-index:5;border:1px solid var(--line);background:#111c2bee;border-radius:12px;padding:14px;margin-top:18px;backdrop-filter:blur(10px)}.transport input[type=range]{flex:1}.transport .controls+ .controls{margin-top:10px}.step-number{color:var(--green);font-variant-numeric:tabular-nums;min-width:62px}.phase-header{display:flex;gap:16px;justify-content:space-between;align-items:flex-start}.tag{display:inline-block;border:1px solid var(--line);border-radius:20px;padding:4px 10px;font-size:12px;color:var(--gold);white-space:nowrap}.stage-note{max-width:1000px;color:var(--muted)}.stage-stats{display:flex;gap:20px;flex-wrap:wrap;font-size:13px}.stage-stats b{color:var(--green)}.route{font:13px/1.6 ui-monospace,monospace;color:var(--blue);background:#0b1422;padding:10px 13px;border-radius:7px}.blocks{display:grid;grid-template-columns:repeat(32,1fr);gap:3px;margin:8px 0}.block{height:6px;background:#304057;border-radius:2px}.block.focused{background:var(--gold)}.diagram{position:relative;display:grid;grid-template-columns:1fr 1.65fr 1fr;gap:18px;margin-top:16px}.zone{min-width:0;padding:14px;border:1px solid var(--line);border-radius:12px;background:#101a29}.zone-title{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}.memory-grid{display:grid;grid-template-columns:repeat(16,minmax(0,1fr));gap:3px;margin:7px 0}.mem{height:11px;border-radius:2px;background:#29374c}.mem.contributor{box-shadow:inset 0 0 0 1px #eff7ff}.mem.transfer{box-shadow:inset 0 0 0 2px #60f8ed;opacity:1!important}.mem.selected{outline:2px solid var(--gold);outline-offset:1px;position:relative;z-index:2}.memory-label{font-size:11px;margin-top:10px;color:var(--muted)}.output-section{margin-top:20px;padding-top:12px;border-top:1px solid var(--line)}.warp{border:1px solid var(--line);border-left:3px solid var(--warp);border-radius:8px;padding:10px;margin:10px 0}.warp-head{font-size:12px;color:var(--warp);display:flex;justify-content:space-between;gap:8px}.lanes{display:grid;grid-template-columns:repeat(16,minmax(0,1fr));gap:4px;margin-top:8px}.lane{padding:4px 0;font-size:10px;background:#202d40;border:1px solid #40516a;border-radius:4px;min-width:0;text-align:center;color:#c4d2e4}.lane.working{background:#1b4941;border-color:#56b69a}.lane.waiting{background:#382b55;border-color:var(--purple)}.lane.chosen{outline:2px solid var(--gold);outline-offset:1px;color:var(--gold);position:relative;z-index:2}.lane.peer{box-shadow:inset 0 0 0 2px var(--blue)}.slot{padding:11px;border:1px solid var(--line);border-left:3px solid var(--warp);border-radius:9px;margin:10px 0;background:#172336;font-size:12px}.slot.active{border-color:var(--gold)}.slot.final{border-color:var(--green)}.slot .pair{font:13px/1.8 ui-monospace,monospace}.slot small{display:block}.legend{display:flex;gap:15px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin:15px 0 5px}.dot{width:10px;height:10px;display:inline-block;margin-right:5px;border-radius:2px}.flow{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:3;overflow:visible}.two{display:grid;grid-template-columns:1fr 1fr;gap:18px}.two>.panel{min-width:0}.state-pair{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}.state-pair>div{padding:10px;background:#0c1523;border-radius:7px}.state-pair strong{display:block;font:18px/1.6 ui-monospace,monospace;color:var(--green)}pre{background:#0c1523;border:1px solid var(--line);border-radius:9px;padding:13px;font:12px/1.65 ui-monospace,monospace;white-space:pre-wrap;overflow-wrap:anywhere;margin:12px 0;overflow:auto}code{font: .9em ui-monospace,monospace}.ir{max-height:410px}.ir-line{display:block;color:#9eafc8;padding:0 5px;white-space:pre}.ir-line.on{color:var(--text);background:#23483e;border-left:3px solid var(--green)}.ir-num{color:#68819e;display:inline-block;width:27px;user-select:none}.scroll{overflow:auto}.butterfly{width:100%;min-width:650px;height:125px;display:block}.butterfly text{fill:#b4c2d6;font:10px ui-monospace,monospace}.butterfly path{fill:none;stroke:#506888;stroke-width:1;opacity:.45}.butterfly path.hot{stroke:var(--gold);stroke-width:2.5;opacity:1}.validation{font-size:13px;padding:12px 14px;background:#152c2a;border-radius:9px;border:1px solid #315e52}.validation.bad{background:#472b31;border-color:var(--pink)}.hidden{display:none!important}details{margin-top:14px}summary{cursor:pointer;color:var(--blue)}table{border-collapse:collapse;width:100%;font:12px/1.6 ui-monospace,monospace}th,td{padding:5px 10px;text-align:right;border-bottom:1px solid var(--line)}.data-table{max-height:300px;overflow:auto}.error{color:var(--pink)}footer{font-size:12px;color:var(--muted);margin-top:25px}@media(max-width:900px){.diagram{grid-template-columns:1fr 1.5fr}.shared-zone{grid-column:1/-1}.slots{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.two{grid-template-columns:1fr}.slot{padding:8px}.slot .pair{font-size:11px}}@media(max-width:570px){.phase-header{flex-wrap:wrap}main{padding:18px 10px}.panel{padding:13px}.diagram{grid-template-columns:1fr}.shared-zone{grid-column:auto}.slots{grid-template-columns:1fr 1fr}.transport{position:static}.controls{gap:8px}.transport select{width:100%}.lanes{grid-template-columns:repeat(16,1fr)}.zone{padding:12px}.flow{opacity:.8}.memory-grid{grid-template-columns:repeat(32,1fr)}}@media print{body{background:white;color:#111}main{max-width:none;padding:0}.transport,.settings,.no-print,footer{display:none!important}.panel,.zone{background:white;border-color:#aaa;break-inside:avoid}.muted,small,.stage-note,.zone-title{color:#333}.diagram{grid-template-columns:1fr 1.65fr 1fr}.shared-zone{grid-column:auto}.slots{display:block}.two{display:block}.ir{max-height:none}.flow{display:none}pre{color:#111;background:#eee}.state-pair>div{background:#eee}.state-pair strong{color:#165d4b}h1{font-size:23px}.notice{font-size:10px}button{color:#111}.lane{color:#111}.slot{background:#eee}.validation{background:#e5f4ef}.route{color:#123;background:#eee}}
+/* Compact replay; supporting explanations remain available without crowding the diagram. */
+.two>div{min-width:0}#compiler-provenance{overflow-wrap:anywhere}
+main{padding:12px 18px}h1{font-size:28px;margin:5px 0}.intro{margin:6px 0;font-size:13px}header details{margin-top:4px;font-size:12px}.panel,.transport{margin-top:8px;padding:10px}.settings>summary{font-size:12px}.settings form{margin-top:8px}#config-error:empty{display:none}.transport .controls+.controls{margin-top:6px}.controls{gap:8px}button,select,input[type=number]{padding:4px 8px}.diagram{gap:10px;margin-top:8px}.zone{padding:9px}.memory-grid{grid-template-columns:repeat(32,minmax(0,1fr));gap:2px;margin:5px 0}.mem{height:6px}.memory-label{margin-top:6px}.output-section{margin-top:10px;padding-top:7px}.warp{padding:5px 7px;margin:6px 0}.lanes{gap:3px;margin-top:4px}.lane{padding:2px 0;min-height:24px}.slot{padding:6px;margin:6px 0}.slot .pair{font-size:12px;line-height:1.4}.legend{margin:7px 0 0;gap:10px}.stage-note{font-size:12px;margin:4px 0}.route{font-size:12px;padding:5px 8px;margin:5px 0}.stage-stats{font-size:11px;gap:12px}.phase-header h2{font-size:18px;margin-bottom:3px}.zone>small,.zone>p{font-size:11px}.zone-title{font-size:11px;margin-bottom:4px}.replay-details{margin-top:8px}.replay-details>summary{font-size:13px}
+@media(min-width:901px){main{padding-top:6px;padding-bottom:6px}.panel,.transport{margin-top:5px;padding-top:7px;padding-bottom:7px}.slots{display:grid;grid-template-columns:1fr 1fr;gap:5px}.slot{min-width:0}.slot .pair{font-size:10px}.memory-grid{gap:1px}.mem{height:4px}body{font-size:13px;line-height:1.4}header .intro{max-width:none}#warps{display:grid;grid-template-columns:1fr 1fr;gap:6px}.warp{margin:6px 0}.lane{font-size:9px;padding:2px 0}.zone{font-size:11px}.zone>p{margin:4px 0 7px}.zone>small{font-size:10px}.tag{padding:2px 8px}.transport{position:static;display:flex;flex-wrap:wrap;gap:6px 12px}.transport>.controls:first-child{flex:1}.transport .controls+.controls{margin-top:0}.controls label{font-size:12px}.slot small{font-size:10px}.slot .pair{font-size:11px}.memory-label{font-size:10px}.legend{font-size:10px}.route{font-size:11px}.settings{padding:6px 10px}}
+/* Recording mode keeps navigation fixed and gives the selected view the remaining viewport. */
+.recording-only{display:none}
+body.recording main{height:100dvh;max-width:none;display:grid;grid-template-rows:auto minmax(0,1fr);gap:8px;padding:10px}
+body.recording main>header,body.recording .settings{display:none}
+body.recording .transport{margin:0;position:static}
+body.recording .playback-setting{display:none}
+body.recording .recording-only{display:inline-flex}
+body.recording main>.panel,body.recording .replay-details{margin:0;min-height:0;overflow:auto}
+body.recording .replay-details>summary,body.recording .replay-details>section,body.recording .replay-details>.two,body.recording .replay-details>footer{display:none}
+body.recording[data-view="replay"] .replay-details{display:none}
+body.recording:not([data-view="replay"]) #replay-panel{display:none}
+body.recording[data-view="compiler"] #compiler-panel{display:flex;flex-direction:column;height:100%;margin:0;min-height:0}
+body.recording #compiler-panel>p.muted,body.recording #compiler-panel>.notice,body.recording #compiler-provenance{display:none}
+body.recording #compiler-panel>.two{flex:1;min-height:0;margin-top:12px}
+body.recording #compiler-panel>.two>div{display:flex;flex-direction:column;min-height:0}
+body.recording #compiler-panel pre{flex:1;min-height:0;max-height:none!important;margin:0;white-space:pre;overflow:auto;font-size:clamp(12px,1vw,16px)}
+body.recording[data-view="inspect"] #inspection{display:grid;height:100%;min-height:0}
+body.recording #inspection>.panel{margin:0;min-height:0;overflow:auto}
+body.recording #inspection .ir{max-height:none}
+body.recording #replay-panel{display:flex;flex-direction:column}
+body.recording #replay-panel .diagram{flex:1;min-height:0}
+body.recording #replay-panel .zone{overflow:auto}
+body.recording .flow{overflow:hidden}
+@media(max-width:900px){body.recording #replay-panel .diagram{flex:none}body.recording #compiler-panel>.two{grid-template-columns:1fr 1fr;gap:8px}body.recording #inspection{grid-template-columns:1fr 1fr;gap:8px}body.recording #compiler-panel pre{font-size:12px}}
+</style>
+</head>
+<body><main>
+<header><div class="eyebrow">Emmy · inside f02_row_softmax</div><h1>Follow the numbers through softmax.</h1>
+<details><summary>About this replay · caveats and links</summary><p class="intro muted">One row. 256 random inputs. 128 threads arranged into four warps. Step through immutable snapshots of loads, register updates, shuffle exchanges, shared-memory reductions and output stores.</p>
+<p class="notice">This is an educational CPU replay of the IR, not a GPU trace or a timing animation. Highlighted threads have parallelizable work; warps and blocks need not execute at the same instant. Arithmetic uses float32 rounding with JavaScript exp, not a bit-exact emulation of PTX’s approximate exponential.</p>
+<p class="no-print"><a href="tests/performance.html">← Performance dashboard</a> · <a href="compile.py">Compiler source</a> · <button id="print" type="button">Print / save step as PDF</button></p></details></header>
+<noscript><p class="error">JavaScript is required for this self-contained, offline visualization.</p></noscript>
+<details class="panel settings"><summary>Example configuration · random seed and row / block</summary><form id="configure" class="controls">
+<label>Random seed <input id="seed" type="number" min="0" max="4294967295" step="1" value="2026" required></label>
+<label>Row / block <input id="row" type="number" min="0" max="63" step="1" value="0" required></label>
+<button type="submit">Generate example</button><span class="muted" style="font-size:12px">Seeded uniform [−3, 3], rounded to float32; not the official test inputs.</span>
+</form><p id="config-error" class="error" role="alert"></p>
+<div id="blocks" class="blocks" role="img" aria-label="64 independent row blocks; selected block is highlighted"></div><small id="block-caption"></small></details>
+<section class="transport" aria-label="Snapshot controls">
+<div class="controls"><button id="prev" type="button">← Previous</button><button id="play" type="button" class="primary">Play</button><button id="next" type="button">Next →</button><span id="step-number" class="step-number"></span><input id="step" type="range" min="0" max="25" value="0" aria-label="Snapshot number"></div>
+<div class="controls"><label>Jump to <select id="jump"></select></label><label class="playback-setting">Playback <select id="speed"><option value="1800">1.8 s / step</option><option value="3500">3.5 s / step</option><option value="800">0.8 s / step</option></select></label><button id="recording" type="button" aria-pressed="false">Recording mode</button><label class="recording-only">View <select id="recording-view"><option value="replay">Memory replay</option><option value="compiler">Compiler → PTX</option><option value="inspect">Thread → IR</option></select></label><small class="recording-only">CPU replay · not a GPU trace</small></div>
+</section>
+<section id="replay-panel" class="panel" aria-labelledby="stage-title">
+<div class="phase-header"><div><div id="phase" class="eyebrow"></div><h2 id="stage-title"></h2></div><span id="activity" class="tag"></span></div>
+<p id="stage-note" class="stage-note" aria-live="polite"></p><p id="route" class="route"></p>
+<div class="stage-stats"><span>Threads acting / synchronizing: <b id="active-count"></b></span><span>Global outputs written: <b id="written"></b></span><span>Snapshot: <b id="example"></b></span></div>
+<div class="diagram" id="diagram">
+<section class="zone"><h3 class="zone-title">GPU global memory</h3><p class="muted" style="font-size:12px">Input buffer x · the selected row</p>
+<div class="memory-label">Columns 0–127 → first loop iteration</div><div id="input-a" class="memory-grid"></div>
+<div class="memory-label">Columns 128–255 → second loop iteration</div><div id="input-b" class="memory-grid"></div>
+<small>Color = owner warp. Brightness = input value. A white inset marks inputs represented by the selected thread’s current summary.</small>
+<div class="output-section"><h3 class="zone-title">Global output buffer</h3><small>Dark cells have not been written yet—not zero probabilities.</small><div id="output-a" class="memory-grid"></div><div id="output-b" class="memory-grid"></div><small id="output-caption"></small></div>
+</section>
+<section class="zone"><h3 class="zone-title">One block on an SM · private registers</h3><small>128 threads. Each owns acc0 = m and acc1 = s. Numbers on buttons are lane IDs within a warp.</small><div id="warps"></div><small>Choose a lane to inspect its values. Gold = selected; blue inset = its shuffle partner. Arrows follow selected transfers, or the few active shared-memory writers.</small></section>
+<section class="zone shared-zone"><h3 class="zone-title">Block shared memory · 32 bytes</h3><small>Two arrays of four floats: m[warp] and s[warp]. Each card below represents one pair of slots.</small><div id="slots" class="slots"></div><p id="shared-caption" class="muted" style="font-size:12px"></p></section>
+<svg id="flow" class="flow" aria-hidden="true"></svg>
+</div>
+<div class="legend"><span><i class="dot" style="background:#56b69a"></i>Active computation / transfer</span><span><i class="dot" style="background:var(--purple)"></i>Barrier participation</span><span><i class="dot" style="background:var(--gold)"></i>Selected thread / writer</span><span><i class="dot" style="background:#60f8ed"></i>Current global read / write</span></div>
+</section>
+<details class="replay-details"><summary>Compiler walkthrough · actual Python → generated PTX · thread inspection</summary>
+<section id="compiler-panel" class="panel" aria-labelledby="compiler-title"><h2 id="compiler-title">From scheduled IR to our PTX</h2>
+<p class="muted">Choose a compiler checkpoint. The replay shows the intended semantics; the excerpts below show our implementation and actual emitted PTX. This page does not execute that PTX.</p>
+<div class="controls"><button type="button" onclick="go(2)">1 · Address and load</button><button type="button" onclick="go(6)">2 · Warp exchange</button><button type="button" onclick="go(13)">3 · Shared-memory tree</button></div>
+<p id="compiler-explanation" aria-live="polite"></p><small id="compiler-provenance"></small>
+<div class="two"><div><h3>Actual compile.py excerpt</h3><pre id="compiler-source" tabindex="0" style="max-height:300px"></pre></div><div><h3>Actual generated PTX excerpt</h3><pre id="compiler-ptx" tabindex="0" style="max-height:300px"></pre></div></div>
+<p class="notice">The shared-tree excerpt spans both merge stages and the final broadcast; the shuffle excerpt shows the first XOR-16 stage. These are contiguous excerpts, not a one-to-one trace of replay snapshots. GPU correctness evidence comes separately from <code>test_compile.py --remote</code> and the public performance snapshot—not this CPU animation.</p></section>
+<pre id="compiler-evidence" hidden>{&quot;sha256&quot;: &quot;de93a1a6260fc420ad409fa3c618ba03d99c74cf8c6ed256a1d995cbfb5511ce&quot;, &quot;load&quot;: {&quot;source&quot;: &quot;139     def address(self, name, index):\n140         shape = self.shapes[name]\n141         # Empty indices mean offset zero; a single index is already flat.\n142         flat = \&quot;0\&quot;\n143         if len(index) == 1:\n144             flat = self.index(index[0])\n145         elif index:\n146             if len(index) != len(shape):\n147                 raise NotImplementedError(f\&quot;index rank does not match buffer {name}\&quot;)\n148             for extent, coordinate in zip(shape, index, strict=True):\n149                 flat = self.instruction(\&quot;mul.lo.s32\&quot;, flat, extent, kind=\&quot;r\&quot;)\n150                 flat = self.instruction(\&quot;add.s32\&quot;, flat, self.index(coordinate), kind=\&quot;r\&quot;)\n151         if name in self.shared:\n152             offset = self.instruction(\&quot;mul.lo.s32\&quot;, flat, 4, kind=\&quot;r\&quot;)\n153             return self.instruction(\&quot;add.u32\&quot;, self.pointers[name], offset, kind=\&quot;r\&quot;)\n154         offset = self.instruction(\&quot;mul.wide.s32\&quot;, flat, 4, kind=\&quot;rd\&quot;)\n155         return self.instruction(\&quot;add.u64\&quot;, self.pointers[name], offset, kind=\&quot;rd\&quot;)\n\n    def statement(self, stmt):\n        if isinstance(stmt, Load):\n            self.check_dtype(stmt.dtype)\n            address = self.address(stmt.input, stmt.index)\n            alignment = self.load_alignment(stmt.input, stmt.index)\n            i = 0\n            while i &lt; len(stmt.names):\n                width = next(w for w in (4, 2, 1)\n                             if w &lt;= len(stmt.names) - i and math.gcd(alignment, 4 * i) % (4 * w) == 0)\n                registers = [f\&quot;%f{self.counts[&#x27;f&#x27;] + j}\&quot; for j in range(width)]\n                self.counts[\&quot;f\&quot;] += width\n                self.values.update(zip(stmt.names[i:i + width], registers))\n                target = registers[0] if width == 1 else \&quot;{\&quot; + \&quot;, \&quot;.join(registers) + \&quot;}\&quot;\n                vector = \&quot;\&quot; if width == 1 else f\&quot;.v{width}\&quot;\n                self.emit(f\&quot;ld.{self.space(stmt.input)}{vector}.f32 {target}, [{address}+{4 * i}];\&quot;)\n                i += width&quot;, &quot;ptx&quot;: &quot;    @%p1 bra L2;\n    mov.f32 %f2, 0f3F800000;\n    mul.lo.s32 %r11, 0, 64;\n    add.s32 %r12, %r11, %r8;\n    mul.lo.s32 %r13, %r12, 256;\n    add.s32 %r14, %r13, %r10;\n    mul.wide.s32 %rd4, %r14, 4;\n    add.u64 %rd5, %rd1, %rd4;\n    ld.global.f32 %f3, [%rd5+0];&quot;}, &quot;shuffle&quot;: {&quot;source&quot;: &quot;        elif isinstance(stmt, WarpShuffle):\n            self.check_dtype(stmt.dtype)\n            if not 1 &lt;= stmt.length &lt;= 32 or stmt.length &amp; (stmt.length - 1):\n                raise ValueError(\&quot;WarpShuffle length must be a power of two up to 32\&quot;)\n            mask = self.instruction(\&quot;activemask.b32\&quot;, kind=\&quot;r\&quot;)\n            half = stmt.length // 2\n            while half:\n                for left, right in zip(stmt.state, stmt.state_b, strict=True):\n                    bits = self.instruction(\&quot;mov.b32\&quot;, self.values[left], kind=\&quot;r\&quot;)\n                    bits = self.instruction(\&quot;shfl.sync.bfly.b32\&quot;, bits, half, \&quot;0x1f\&quot;, mask, kind=\&quot;r\&quot;)\n                    self.values[right] = self.instruction(\&quot;mov.b32\&quot;, bits)\n                self.combine(stmt)\n                half //= 2\n\n256     def combine(self, stmt):\n257         outer, outer_indices = self.values.copy(), self.indices.copy()\n258         self.body(stmt.combine_states)\n259         for name in stmt.state:\n260             self.emit(f\&quot;mov.f32 {outer[name]}, {self.values[name]};\&quot;)\n261         self.values = outer\n262         self.indices = outer_indices&quot;, &quot;ptx&quot;: &quot;    activemask.b32 %r15;\n    mov.b32 %r16, %f1;\n    shfl.sync.bfly.b32 %r17, %r16, 16, 0x1f, %r15;\n    mov.b32 %f15, %r17;\n    mov.b32 %r18, %f0;\n    shfl.sync.bfly.b32 %r19, %r18, 16, 0x1f, %r15;\n    mov.b32 %f16, %r19;\n    max.NaN.f32 %f17, %f1, %f15;\n    sub.rn.f32 %f18, %f1, %f17;\n    mul.rn.f32 %f19, %f18, 0f3FB8AA3B;\n    ex2.approx.f32 %f20, %f19;\n    sub.rn.f32 %f21, %f15, %f17;\n    mul.rn.f32 %f22, %f21, 0f3FB8AA3B;\n    ex2.approx.f32 %f23, %f22;\n    mul.rn.f32 %f24, %f20, %f0;\n    mul.rn.f32 %f25, %f23, %f16;\n    add.rn.f32 %f26, %f24, %f25;\n    mov.f32 %f27, %f17;\n    mov.f32 %f1, %f27;\n    mov.f32 %f0, %f26;&quot;}, &quot;tree&quot;: {&quot;source&quot;: &quot;264     def tree(self, stmt):\n265         self.check_dtype(stmt.dtype)\n266         if stmt.length &lt;= 0 or stmt.length &amp; (stmt.length - 1):\n267             raise ValueError(\&quot;TreeHalve length must be a power of two\&quot;)\n268         outer = self.values.copy()\n269         tid = Var(stmt.tid_var)\n270         scale = stmt.inner[1] if stmt.inner else 1\n271         inner = Var(stmt.inner[0]) if stmt.inner else Literal(0, \&quot;int\&quot;)\n272         base = tid * scale + inner\n273         half = stmt.length // 2\n274         while half:\n275             done = self.label()\n276             skip = self.instruction(\&quot;setp.ge.s32\&quot;, self.index(tid), half, kind=\&quot;p\&quot;)\n277             self.emit(f\&quot;@{skip} bra {done};\&quot;)\n278             # One writer per warp slot avoids redundant same-address writes.\n279             if stmt.tid_var == \&quot;warp\&quot; and stmt.inner is None:\n280                 nonleader = self.instruction(\&quot;setp.ne.u32\&quot;, self.indices[\&quot;lane\&quot;], 0, kind=\&quot;p\&quot;)\n281                 self.emit(f\&quot;@{nonleader} bra {done};\&quot;)\n282             addresses = []\n283             for buf, left, right in zip(stmt.bufs, stmt.state, stmt.state_b, strict=True):\n284                 address = self.address(buf, (base,))\n285                 other = self.address(buf, (base + half * scale,))\n286                 addresses.append(address)\n287                 self.values[left] = self.instruction(\&quot;ld.shared.f32\&quot;, f\&quot;[{address}]\&quot;)\n288                 self.values[right] = self.instruction(\&quot;ld.shared.f32\&quot;, f\&quot;[{other}]\&quot;)\n289             self.combine(stmt)\n290             for address, name in zip(addresses, stmt.state, strict=True):\n291                 self.emit(f\&quot;st.shared.f32 [{address}], {self.values[name]};\&quot;)\n292             self.emit(f\&quot;{done}:\&quot;)\n293             self.statement(Sync(barrier_id=stmt.barrier_id, count=stmt.barrier_count))\n294             self.values = outer.copy()\n295             half //= 2\n296         for buf, name in zip(stmt.bufs, stmt.state, strict=True):\n297             address = self.address(buf, (inner,))\n298             self.emit(f\&quot;ld.shared.f32 {outer[name]}, [{address}];\&quot;)\n299         self.values = outer&quot;, &quot;ptx&quot;: &quot;    bar.sync 0;\n    setp.ge.s32 %p3, %r4, 2;\n    @%p3 bra L5;\n    setp.ne.u32 %p4, %r3, 0;\n    @%p4 bra L5;\n    mul.lo.s32 %r42, %r4, 1;\n    add.s32 %r43, %r42, 0;\n    mul.lo.s32 %r44, %r43, 4;\n    add.u32 %r45, %r36, %r44;\n    mul.lo.s32 %r46, %r4, 1;\n    add.s32 %r47, %r46, 0;\n    add.s32 %r48, %r47, 2;\n    mul.lo.s32 %r49, %r48, 4;\n    add.u32 %r50, %r36, %r49;\n    ld.shared.f32 %f80, [%r45];\n    ld.shared.f32 %f81, [%r50];\n    mul.lo.s32 %r51, %r4, 1;\n    add.s32 %r52, %r51, 0;\n    mul.lo.s32 %r53, %r52, 4;\n    add.u32 %r54, %r37, %r53;\n    mul.lo.s32 %r55, %r4, 1;\n    add.s32 %r56, %r55, 0;\n    add.s32 %r57, %r56, 2;\n    mul.lo.s32 %r58, %r57, 4;\n    add.u32 %r59, %r37, %r58;\n    ld.shared.f32 %f82, [%r54];\n    ld.shared.f32 %f83, [%r59];\n    max.NaN.f32 %f84, %f80, %f81;\n    sub.rn.f32 %f85, %f80, %f84;\n    mul.rn.f32 %f86, %f85, 0f3FB8AA3B;\n    ex2.approx.f32 %f87, %f86;\n    sub.rn.f32 %f88, %f81, %f84;\n    mul.rn.f32 %f89, %f88, 0f3FB8AA3B;\n    ex2.approx.f32 %f90, %f89;\n    mul.rn.f32 %f91, %f87, %f82;\n    mul.rn.f32 %f92, %f90, %f83;\n    add.rn.f32 %f93, %f91, %f92;\n    mov.f32 %f94, %f84;\n    mov.f32 %f80, %f94;\n    mov.f32 %f82, %f93;\n    st.shared.f32 [%r45], %f80;\n    st.shared.f32 [%r54], %f82;\n    L5:\n    bar.sync 0;\n    setp.ge.s32 %p5, %r4, 1;\n    @%p5 bra L6;\n    setp.ne.u32 %p6, %r3, 0;\n    @%p6 bra L6;\n    mul.lo.s32 %r60, %r4, 1;\n    add.s32 %r61, %r60, 0;\n    mul.lo.s32 %r62, %r61, 4;\n    add.u32 %r63, %r36, %r62;\n    mul.lo.s32 %r64, %r4, 1;\n    add.s32 %r65, %r64, 0;\n    add.s32 %r66, %r65, 1;\n    mul.lo.s32 %r67, %r66, 4;\n    add.u32 %r68, %r36, %r67;\n    ld.shared.f32 %f95, [%r63];\n    ld.shared.f32 %f96, [%r68];\n    mul.lo.s32 %r69, %r4, 1;\n    add.s32 %r70, %r69, 0;\n    mul.lo.s32 %r71, %r70, 4;\n    add.u32 %r72, %r37, %r71;\n    mul.lo.s32 %r73, %r4, 1;\n    add.s32 %r74, %r73, 0;\n    add.s32 %r75, %r74, 1;\n    mul.lo.s32 %r76, %r75, 4;\n    add.u32 %r77, %r37, %r76;\n    ld.shared.f32 %f97, [%r72];\n    ld.shared.f32 %f98, [%r77];\n    max.NaN.f32 %f99, %f95, %f96;\n    sub.rn.f32 %f100, %f95, %f99;\n    mul.rn.f32 %f101, %f100, 0f3FB8AA3B;\n    ex2.approx.f32 %f102, %f101;\n    sub.rn.f32 %f103, %f96, %f99;\n    mul.rn.f32 %f104, %f103, 0f3FB8AA3B;\n    ex2.approx.f32 %f105, %f104;\n    mul.rn.f32 %f106, %f102, %f97;\n    mul.rn.f32 %f107, %f105, %f98;\n    add.rn.f32 %f108, %f106, %f107;\n    mov.f32 %f109, %f99;\n    mov.f32 %f95, %f109;\n    mov.f32 %f97, %f108;\n    st.shared.f32 [%r63], %f95;\n    st.shared.f32 [%r72], %f97;\n    L6:\n    bar.sync 0;\n    mul.lo.s32 %r78, 0, 4;\n    add.u32 %r79, %r36, %r78;\n    ld.shared.f32 %f1, [%r79];\n    mul.lo.s32 %r80, 0, 4;\n    add.u32 %r81, %r37, %r80;\n    ld.shared.f32 %f0, [%r81];&quot;}}</pre><!-- compiler-evidence -->
+<div class="two" id="inspection">
+<section class="panel" aria-labelledby="inspect-title"><h2 id="inspect-title">Inspect one thread</h2><div class="controls"><label for="thread">Thread <input id="thread" type="range" min="0" max="127" value="0"><output id="thread-id">0</output></label></div>
+<p id="thread-inputs" class="muted"></p><div class="state-pair"><div><small>acc0 · running maximum m</small><strong id="state-m"></strong></div><div><small>acc1 · rescaled sum s</small><strong id="state-s"></strong></div></div><p id="coverage" class="muted"></p><pre id="calculation"></pre><p id="role" class="muted"></p></section>
+<section class="panel"><h2>IR → generated operations</h2><p id="lowering" class="muted"></p><pre id="ir" class="ir" tabindex="0" aria-label="Softmax IR; current statements are highlighted"></pre><small>Highlighted statements correspond to the logical snapshot. One snapshot can represent multiple PTX instructions; initialization and tree barriers are implicit in their parent IR nodes.</small></section>
+</div>
+<section class="panel"><h2>Within-warp exchange map</h2><p id="exchange-caption" class="muted"></p><div class="scroll"><svg id="butterfly" class="butterfly" viewBox="0 0 720 125" role="img" aria-label="Shuffle source and destination lanes"></svg></div><p class="notice">At a shuffle stage, every lane reads its partner’s <em>old</em> pair before combining. This is not a sequential loop that lets later lanes read earlier lanes’ updated state. There is no shuffle link across a warp boundary.</p></section>
+<section class="panel"><h2>Check the complete replay</h2><div id="validation" class="validation"></div><p class="muted" style="font-size:13px">This checks the completed sequence against an independent, direct stable softmax in JavaScript double precision—even when you are viewing an earlier snapshot. It does not claim a GPU measurement or a hidden-set score.</p>
+<details><summary>Inspect all 256 inputs and the current global outputs</summary><div class="data-table"><table><thead><tr><th>Column</th><th>Owner thread</th><th>Input x</th><th>Currently stored y</th><th>Direct reference y</th></tr></thead><tbody id="data-rows"></tbody></table></div></details></section>
+<footer>Standalone page: no server, external libraries, network requests or GPU needed. Shared-memory cards retain stale scratch values until overwritten; only slot 0 is the final row summary. The real launch has 64 independent blocks; their physical SM assignment and timing are not depicted.</footer>
+</details>
+</main>
+<script id="softmax-model">
+'use strict';
+// Logical replay of the published f02 schedule. Math.exp is not PTX ex2.approx.
+const SoftmaxDemo = (() => {
+  const f=Math.fround, all=Array.from({length:128},(_,i)=>i);
+  const IR=`    Tile[a0, a1_co] (N=8192)
+        for a1 in a1_co..256:128
+            f32 one = 1.0
+            in0 = load x[a0, a1]
+            f32 in0__gn = maximum(acc0, in0)
+            f32 in0__dg = subtract(acc0, in0__gn)
+            f32 in0__alpha = exp(in0__dg)
+            f32 in0__dg_o = subtract(in0, in0__gn)
+            f32 in0__beta = exp(in0__dg_o)
+            f32 in0__acc1_sa = multiply(acc1, in0__alpha)
+            f32 in0__acc1_sb = multiply(in0__beta, one)
+            f32 acc1 <- add(in0__acc1_sa, in0__acc1_sb)
+            f32 acc0 <- maximum(acc0, in0)
+        WarpShuffle(acc0, acc1, length=32)
+        Smem float acc0_smem[4]
+        Smem float acc1_smem[4]
+        if ((lane == 0)):
+            acc0_smem[warp] = acc0
+            acc1_smem[warp] = acc1
+        Sync
+        TreeHalve(acc0, acc1, length=4, tid=warp)
+        f32 v2 = reciprocal(acc1)
+        for a3 in a1_co..256:128
+            in2 = load x[a0, a3]
+            f32 v3 = subtract(in2, acc0)
+            f32 v4 = exp(v3)
+            f32 v5 = multiply(v2, v4)
+            softmax[a0, a3] = v5`;
+  function sample(seed,row=0) {
+    if(!Number.isInteger(seed)||seed<0||seed>4294967295||!Number.isInteger(row)||row<0||row>63) throw Error('Seed must be uint32; row must be 0–63.');
+    let state=(seed^Math.imul(row,0x9e3779b1))>>>0;
+    return Array.from({length:256},()=>{state=(Math.imul(state,1664525)+1013904223)>>>0;return f((state/4294967296*2-1)*3);});
+  }
+  function merge(a,b) {
+    const m=Math.max(a.m,b.m), alpha=f(Math.exp(f(a.m-m))), beta=f(Math.exp(f(b.m-m)));
+    return {m,s:f(f(a.s*alpha)+f(b.s*beta)),ids:a.ids.concat(b.ids)};
+  }
+  function reference(x) {
+    const m=Math.max(...x), e=x.map(v=>Math.exp(v-m)), sum=e.reduce((a,b)=>a+b,0);
+    return e.map(v=>v/sum);
+  }
+  function trace(input) {
+    if(input.length!==256||!input.every(Number.isFinite)) throw Error('Expected 256 finite inputs.');
+    const x=input.map(f), frames=[];
+    let states=all.map(()=>null), shared=[null,null,null,null], loaded=all.map(()=>null), temp=all.map(()=>null), output=x.map(()=>null), inv=null, ready=false;
+    // Array containers are copied; state objects and their provenance lists are never mutated.
+    function take(kind,title,note,extra={}) {
+      frames.push({kind,title,note,states:states.slice(),shared:shared.slice(),loaded:loaded.slice(),temp:temp.slice(),output:output.slice(),inv,ready,active:[],reads:[],writes:[],ir:[1,1],...extra});
+    }
+    take('input','Inputs are in global memory','One block will process this row. No input has been loaded and no output has been written.');
+    states=all.map(()=>({m:f(-1e30),s:0,ids:[]}));
+    take('seed','Initialize 128 private summary pairs','Every thread seeds m = −1e30 and s = 0. These are private registers, not a shared accumulator.',{active:all,ir:[2,2]});
+    for(let pass=0;pass<2;pass++) {
+      const reads=all.map(t=>t+128*pass);
+      loaded=reads.map(i=>x[i]);
+      take('load',`Load input ${pass+1} of 2 per thread`,`128 loads: thread t reads column t${pass?' + 128':''}. No accumulator changes during this snapshot.`,{active:all,reads,pass,ir:[2,4]});
+      states=states.map((a,t)=>merge(a,{m:loaded[t],s:1,ids:[reads[t]]}));
+      take('local',`Update 128 local summaries · iteration ${pass+1}`,'Each thread updates its own (m,s) pair. When the maximum increases, its old sum is rescaled before the new contribution is added.',{active:all,pass,ir:[5,13]});
+    }
+    for(const offset of [16,8,4,2,1]) {
+      const old=states;
+      states=old.map((a,t)=>merge(a,old[t^offset]));
+      take('shuffle',`Warp shuffle · XOR ${offset}`,'All 32 lanes in each of four warps exchange both state components and merge. Each partner is inside the same warp; all reads use the previous snapshot.',{active:all,offset,ir:[14,14]});
+    }
+    shared=[0,32,64,96].map(t=>states[t]);ready=false;
+    take('publish','Four warp leaders publish their summaries','Only lane 0 of each warp writes. Each pair summarizes 64 inputs. Other lanes already have duplicate copies of their warp result, so they must not also contribute it.',{active:[0,32,64,96],ir:[15,19]});
+    ready=true;
+    take('barrier','Block barrier · make warp summaries visible','All 128 threads participate. The following tree can safely read the four completed shared-memory pairs.',{active:all,ir:[20,20]});
+    for(const half of [2,1]) {
+      const old=shared.slice(), active=Array.from({length:half},(_,w)=>w*32);
+      for(let w=0;w<half;w++) shared[w]=merge(old[w],old[w+half]);
+      ready=false;
+      take('tree',`Shared-memory tree · stride ${half}`,`Threads ${active.join(' and ')} load two summary pairs, rescale and merge them, and overwrite the lower slots. The other threads skip these writes. Original acc0/acc1 registers remain unchanged until broadcast.`,{active,half,ir:[21,21]});
+      ready=true;
+      take('barrier',`Block barrier · finish tree stride ${half}`,'Every thread reaches the barrier, including threads that skipped the merge. The next reads cannot overtake the preceding shared-memory writes.',{active:all,half,ir:[21,21]});
+    }
+    states=all.map(()=>shared[0]);
+    take('broadcast','Broadcast the final row summary','Every thread loads shared slot 0 into acc0 and acc1. The diagram shows one fan-out arrow per warp; this represents 128 threads receiving the pair, not four loads.',{active:all,ir:[21,21]});
+    inv=f(1/shared[0].s);
+    take('reciprocal','Compute 1 / s in every thread','All 128 threads now know the same maximum and denominator. Each computes its own reciprocal before the output loop.',{active:all,ir:[22,22]});
+    for(let pass=0;pass<2;pass++) {
+      const reads=all.map(t=>t+128*pass);
+      loaded=reads.map(i=>x[i]);
+      take('reload',`Read inputs again · output iteration ${pass+1}`,'The original values are reloaded from global memory. The row-wide summary stays in each thread’s private registers.',{active:all,reads,pass,ir:[23,24]});
+      temp=all.map(t=>f(f(Math.exp(f(loaded[t]-states[t].m)))*inv));
+      take('normalize',`Normalize 128 values · output iteration ${pass+1}`,'Every thread computes exp(x − row_max) × reciprocal(row_sum). The probabilities are still in private registers, not yet in the output buffer.',{active:all,pass,ir:[25,27]});
+      reads.forEach((i,t)=>{output[i]=temp[t];});
+      take('store',`Store 128 probabilities · output iteration ${pass+1}`,'Each thread writes its own output position. No atomics are needed: each output element has exactly one owner.',{active:all,writes:reads,pass,ir:[28,28]});
+    }
+    take('done','This row is complete','All 256 probabilities are in global memory. The other 63 row blocks perform the same independent computation; no cross-block reduction is required.',{ir:[28,28]});
+    const ref=reference(x), error=Math.max(...output.map((y,i)=>Math.abs(y-ref[i]))), sum=output.reduce((a,b)=>a+b,0);
+    return {inputs:x,frames,reference:ref,output:output.slice(),error,sum};
+  }
+  return {sample,merge,reference,trace,IR};
+})();
+if(typeof globalThis!=='undefined') globalThis.SoftmaxDemo=SoftmaxDemo;
+</script>
+<script>
+'use strict';
+const $=id=>document.getElementById(id), COLORS=['#6ce5bd','#83b6ff','#c4a1ff','#ffcf86'];
+const fmt=v=>v===null||v===undefined?'not initialized':Math.abs(v)>=1e20?v.toExponential(2):Number(v).toFixed(6);
+const node=(tag,value='',cls='')=>{const e=document.createElement(tag);e.textContent=value;e.className=cls;return e;};
+const svg=(tag,attrs={})=>{const e=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const [k,v] of Object.entries(attrs))e.setAttribute(k,v);return e;};
+let replay, index=0, selected=0, timer=null, exampleSeed=2026, exampleRow=0;
+const inputs=[],outputs=[],lanes=[],warps=[],slots=[],dataRows=[];
+for(let i=0;i<64;i++)$('blocks').append(node('div','','block'));
+for(let i=0;i<256;i++) {
+  const a=node('div','','mem'),b=node('div','','mem');a.setAttribute('aria-hidden','true');b.setAttribute('aria-hidden','true');
+  inputs.push(a);outputs.push(b);$(i<128?'input-a':'input-b').append(a);$(i<128?'output-a':'output-b').append(b);
+  const tr=node('tr');for(let c=0;c<5;c++)tr.append(node('td'));dataRows.push(tr);$('data-rows').append(tr);
+}
+for(let w=0;w<4;w++) {
+  const card=node('div','','warp');card.style.setProperty('--warp',COLORS[w]);
+  const head=node('div','','warp-head');head.append(node('span',`Warp ${w}`),node('span',`threads ${w*32}–${w*32+31}`));
+  const grid=node('div','','lanes');
+  for(let l=0;l<32;l++) {
+    const t=w*32+l,button=node('button',String(l),'lane');button.type='button';button.tabIndex=t===0?0:-1;
+    button.addEventListener('click',()=>selectThread(t));
+    button.addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(e.key)){e.preventDefault();selectThread(e.key==='Home'?0:e.key==='End'?127:Math.max(0,Math.min(127,t+(e.key==='ArrowRight'?1:-1))));lanes[selected].focus();}});
+    lanes.push(button);grid.append(button);
+  }
+  card.append(head,grid);warps.push(card);$('warps').append(card);
+  const slot=node('div','','slot');slot.style.setProperty('--warp',COLORS[w]);slot.append(node('strong',`Shared slot ${w}`),node('div','','pair'),node('small'));slots.push(slot);$('slots').append(slot);
+}
+SoftmaxDemo.IR.split('\n').forEach((line,i)=>{const span=node('span','','ir-line');span.append(node('span',String(i+1),'ir-num'),document.createTextNode(line));$('ir').append(span);});
+function selectThread(t){selected=t;$('thread').value=t;render();}
+function pause(){if(timer!==null)clearInterval(timer);timer=null;$('play').textContent='Play';}
+function go(i){pause();index=Math.max(0,Math.min(replay.frames.length-1,i));render();}
+function regenerate(seed,row){pause();const next=SoftmaxDemo.trace(SoftmaxDemo.sample(seed,row));replay=next;exampleSeed=seed;exampleRow=row;index=0;$('seed').value=seed;$('row').value=row;
+  $('jump').replaceChildren(...replay.frames.map((s,i)=>{const o=node('option',`${i+1}. ${s.title}`);o.value=i;return o;}));$('step').max=replay.frames.length-1;
+  [...$('blocks').children].forEach((e,i)=>e.classList.toggle('focused',i===row));
+  $('block-caption').textContent=`Showing block ${row} / row ${row}; the other 63 blocks are omitted from the detailed replay. This block resides on one SM; its physical assignment is not specified.`;
+  const ok=replay.error<1e-6&&Math.abs(replay.sum-1)<1e-5;
+  $('validation').textContent=`${ok?'PASS':'CHECK FAILED'} · final probability sum ${replay.sum.toFixed(9)} · max absolute error versus direct stable softmax ${replay.error.toExponential(3)} · all 256 outputs checked. This is a numerical replay check, not GPU execution.`;
+  $('validation').classList.toggle('bad',!ok);render();
+}
+const lowerings={input:'Tile → block/axis decoding and bounds guard.',seed:'loop() → mov.f32 seeds before the first StridedLoop iteration.',load:'Load → ld.global.f32; address = x + 4 × (row × 256 + column).',local:'Assign / Accum → max, subtract, exp2-based exponential, multiply, add, then moves back to persistent accumulators.',shuffle:'WarpShuffle → two shfl.sync.bfly.b32 exchanges per lane, followed by the supplied combine_states program.',publish:'Smem / Cond / Write → static shared arrays, lane == 0 guard, st.shared.f32.',barrier:'Sync → bar.sync 0. TreeHalve also emits a barrier after each halving step.',tree:'TreeHalve → leader guard, ld.shared.f32 pairs, combine_states, st.shared.f32.',broadcast:'TreeHalve finishes with ld.shared.f32 into every thread’s original accumulator registers.',reciprocal:'Assign(reciprocal) → div.rn.f32 with numerator 1.0.',reload:'Second StridedLoop + Load → reread global memory with step 128.',normalize:'Assign → subtract, approximate exp via ex2, multiply by reciprocal.',store:'Write → st.global.f32; each thread owns its output index.',done:'Kernel exit → DONE label and ret.'};
+function mergeText(a,b,result){const M=Math.max(a.m,b.m),alpha=Math.fround(Math.exp(Math.fround(a.m-M))),beta=Math.fround(Math.exp(Math.fround(b.m-M)));
+  return `A: m=${fmt(a.m)}, s=${fmt(a.s)} (${a.ids.length} inputs)\nB: m=${fmt(b.m)}, s=${fmt(b.s)} (${b.ids.length} inputs)\n\nM = max(mA, mB) = ${fmt(M)}\nα = exp(mA − M) = ${fmt(alpha)}\nβ = exp(mB − M) = ${fmt(beta)}\nS = sA × α + sB × β = ${fmt(result.s)}\n\nResult summarizes ${result.ids.length} distinct inputs.`;
+}
+const compilerEvidence=JSON.parse($('compiler-evidence').textContent);
+function showCompiler(kind){
+  const key=['shuffle'].includes(kind)?'shuffle':['publish','barrier','tree','broadcast'].includes(kind)?'tree':'load';
+  const explanations={load:'Load: address() flattens tensor coordinates in row-major order, multiplies the element offset by 4 bytes, and adds the argument pointer. statement(Load) emits the memory instruction. Here x[row, column] becomes x + 4 × (row × 256 + column).',shuffle:'WarpShuffle: exchange both m and s using shfl.sync.bfly.b32 and the active-lane mask. combine() lowers the supplied combine_states program, then copies the merged values back to persistent accumulator registers. The two states must remain coupled.',tree:'TreeHalve: guard the merging warp leaders, load both state pairs, combine and store. The branch target is BEFORE bar.sync, so threads that skip the merge still reach the barrier. Finally, every thread loads slot 0 into its original accumulator registers.'};
+  $('compiler-explanation').textContent=explanations[key];
+  $('compiler-source').textContent=compilerEvidence[key].source;
+  $('compiler-ptx').textContent=compilerEvidence[key].ptx;
+  $('compiler-provenance').textContent=`Embedded compiler SHA-256: ${compilerEvidence.sha256}. Input: problems/f02_row_softmax/k_softmax_05263d.ir.json. Refresh: python tools/update_softmax_walkthrough.py. These three topics illustrate lowering; not every snapshot has a separate excerpt.`;
+}
+function render(){if(!replay)return;const s=replay.frames[index],prev=replay.frames[Math.max(0,index-1)],state=s.states[selected],w=selected>>5,lane=selected&31;
+  $('step').value=index;$('jump').value=index;$('step-number').textContent=`${index+1} / ${replay.frames.length}`;$('prev').disabled=index===0;$('next').disabled=index===replay.frames.length-1;
+  $('phase').textContent=s.kind==='shuffle'?'Register-to-register communication':s.kind==='tree'?'Cross-warp reduction':s.kind==='barrier'?'Synchronization':'Logical GPU snapshot';
+  $('stage-title').textContent=s.title;$('stage-note').textContent=s.note;$('activity').textContent=s.kind==='barrier'?'128 barrier participants':s.active.length?`${s.active.length} active threads`:'No active instructions';
+  $('active-count').textContent=`${s.active.length} / 128`;$('written').textContent=`${s.output.filter(v=>v!==null).length} / 256`;$('example').textContent=`seed ${exampleSeed} · row ${exampleRow}`;
+  const routes={input:'Global input → waiting for loads',seed:'Initialize private registers in all four warps',load:`Global x[row, t + ${128*(s.pass||0)}] → thread t’s input register`,local:'Private registers → rescale old sum → updated private (m, s)',shuffle:`Lane (lane_id XOR ${s.offset}) → selected lane’s registers; same warp only`,publish:'Four warp leaders → four shared-memory summary pairs',barrier:'All 128 threads rendezvous; preceding shared writes become safe to consume',tree:`Shared slots w and w + ${s.half} → leader’s temporary registers → shared slot w`,broadcast:'Shared slot 0 → all 128 threads’ private (m, s) registers',reciprocal:'Private s → private reciprocal 1 / s',reload:`Global x[row, t + ${128*(s.pass||0)}] → thread t’s input register`,normalize:'Private x, m, 1/s → private probability register',store:`Thread t’s probability register → global y[row, t + ${128*(s.pass||0)}]`,done:'Complete row of probabilities remains in global memory'};
+  $('route').textContent=routes[s.kind];
+  const contributors=new Set(state?.ids||[]),reads=new Set(s.reads),writes=new Set(s.writes),active=new Set(s.active);
+  for(let i=0;i<256;i++) {
+    const color=COLORS[Math.floor((i%128)/32)],a=inputs[i],b=outputs[i];
+    a.style.background=color;a.style.opacity=.30+.65*(replay.inputs[i]+3)/6;
+    a.className='mem'+(contributors.has(i)?' contributor':'')+(reads.has(i)?' transfer':'')+(i%128===selected?' selected':'');a.title=`x[${exampleRow}, ${i}] = ${fmt(replay.inputs[i])}; owner thread ${i%128}`;
+    b.style.background=s.output[i]===null?'#29374c':color;b.style.opacity=s.output[i]===null?1:Math.min(1,.3+s.output[i]*35);
+    b.className='mem'+(writes.has(i)?' transfer':'')+(i%128===selected?' selected':'');b.title=`y[${exampleRow}, ${i}] = ${s.output[i]===null?'not written':fmt(s.output[i])}`;
+    const vals=[i,i%128,fmt(replay.inputs[i]),s.output[i]===null?'not written':s.output[i].toFixed(9),replay.reference[i].toFixed(9)];vals.forEach((v,j)=>dataRows[i].children[j].textContent=v);
+  }
+  for(let t=0;t<128;t++){const e=lanes[t],v=s.states[t];e.className='lane'+(active.has(t)?(s.kind==='barrier'?' waiting':' working'):'')+(t===selected?' chosen':'')+(s.kind==='shuffle'&&t===(selected^s.offset)?' peer':'');e.tabIndex=t===selected?0:-1;e.setAttribute('aria-pressed',String(t===selected));e.setAttribute('aria-label',`Thread ${t}, warp ${t>>5}, lane ${t&31}; m ${fmt(v?.m)}, s ${fmt(v?.s)}`);e.title=`Thread ${t} · m=${fmt(v?.m)}, s=${fmt(v?.s)} · ${v?.ids.length||0} inputs`;}
+  for(let j=0;j<4;j++){const v=s.shared[j],e=slots[j];e.className='slot'+((s.kind==='publish'||s.kind==='tree'&&j<s.half)?' active':'')+(j===0&&v?.ids.length===256?' final':'');e.children[1].textContent=v?`m ${fmt(v.m)}\ns ${fmt(v.s)}`:'not written';e.children[1].style.whiteSpace='pre-line';e.children[2].textContent=v?`${v.ids.length} inputs · ${!s.ready&&(s.kind==='publish'||s.kind==='tree'&&j<s.half)?'awaiting barrier':'visible'}`:'No shared-memory data yet';}
+  $('shared-caption').textContent=s.shared[0]?(s.shared[0].ids.length===256?'Slot 0 is the full row result. Other slots contain old scratch values; they are not added again.':'Shared memory is block-local. Warp shuffles cannot communicate between these four warps.'):'No inter-warp transfer has happened yet.';
+  const count=s.output.filter(v=>v!==null).length;$('output-caption').textContent=count?`${count} values written; their sum is ${s.output.reduce((a,b)=>a+(b??0),0).toFixed(7)}${count<256?' (partial row)':''}.`:'Output buffer contents are not treated as valid results before stores.';
+  $('thread-id').value=selected;$('thread-inputs').textContent=`Thread ${selected} = warp ${w}, lane ${lane}. Owns x[${selected}] = ${fmt(replay.inputs[selected])} and x[${selected+128}] = ${fmt(replay.inputs[selected+128])} in row ${exampleRow}.`;
+  $('state-m').textContent=fmt(state?.m);$('state-s').textContent=fmt(state?.s);$('coverage').textContent=`Current persistent summary represents ${state?.ids.length||0} input values: m = max(x), s = Σ exp(x − m), not Σ x. Tree merges use temporary registers until broadcast.`;
+  let calc='',role=active.has(selected)?'This thread participates in this snapshot.':'This thread has no arithmetic or transfer work in this snapshot.';
+  if(s.kind==='local')calc=mergeText(prev.states[selected],{m:s.loaded[selected],s:1,ids:[selected+128*s.pass]},state);
+  else if(s.kind==='shuffle'){calc=`Peer: thread ${selected^s.offset}, lane ${lane^s.offset}\nRead both old state components before combining.\n\n`+mergeText(prev.states[selected],prev.states[selected^s.offset],state);role=`All 128 threads do analogous exchanges. The ${s.offset} offset never crosses a warp boundary.`;}
+  else if(s.kind==='tree'){if(active.has(selected)){calc=`Temporary merge: shared[${w}] with shared[${w+s.half}]\n\n`+mergeText(prev.shared[w],prev.shared[w+s.half],s.shared[w])+`\n\nWrite result → shared[${w}]`;role='Only this warp’s lane 0 performs this merge. Persistent acc0/acc1 are not overwritten yet.';}else calc=`No merge for thread ${selected}.\nActive writer threads: ${s.active.join(', ')}.\nThis thread must still reach the following barrier.`;}
+  else if(['load','reload'].includes(s.kind))calc=`column = ${selected} + ${128*s.pass} = ${selected+128*s.pass}\nbyte offset = 4 × (${exampleRow} × 256 + column)\nin = ${fmt(s.loaded[selected])}\n\nThe memory load itself does not update m or s.`;
+  else if(s.kind==='normalize')calc=`x = ${fmt(s.loaded[selected])}\nm = ${fmt(state.m)}\ns = ${fmt(state.s)}\n1 / s = ${fmt(s.inv)}\n\ny = exp(x − m) × (1 / s)\n  = ${s.temp[selected].toFixed(9)}\n\nResult is still in a register, not global memory.`;
+  else if(s.kind==='store')calc=`st.global.f32 y[row, ${selected+128*s.pass}]\nvalue = ${s.output[selected+128*s.pass].toFixed(9)}`;
+  else if(s.kind==='publish')calc=lane===0?`shared_m[${w}] = ${fmt(state.m)}\nshared_s[${w}] = ${fmt(state.s)}\n\nOnly one copy of this warp’s summary is published.`:'Lane is not zero: skip the shared-memory stores.\nThe warp leader publishes the identical warp summary.';
+  else if(s.kind==='barrier')calc='bar.sync 0\n\nAll 128 threads participate, including inactive writers.\nNo arithmetic changes m or s in this snapshot.';
+  else if(s.kind==='broadcast')calc=`acc0 ← shared_m[0] = ${fmt(state.m)}\nacc1 ← shared_s[0] = ${fmt(state.s)}\n\nAll 128 threads receive the same row summary.`;
+  else if(s.kind==='reciprocal')calc=`v2 = 1 / ${fmt(state.s)} = ${fmt(s.inv)}\nComputed independently in each thread.`;
+  else if(s.kind==='seed')calc='acc0 = float32(−1e30)\nacc1 = 0\n\nThe loop helper emits these seeds before iteration 1.';
+  else if(s.kind==='done')calc=`y[${selected}] = ${s.output[selected].toFixed(9)}\ny[${selected+128}] = ${s.output[selected+128].toFixed(9)}\n\nThis thread’s two probabilities are stored.\nAll 256 row probabilities sum to approximately 1.`;
+  else calc='Input values exist only in global memory.\nNo accumulator registers have been initialized yet.';
+  $('calculation').textContent=calc;$('role').textContent=role;$('lowering').textContent=lowerings[s.kind];
+  [...$('ir').children].forEach((e,i)=>e.classList.toggle('on',i+1>=s.ir[0]&&i+1<=s.ir[1]));
+  const highlighted=$('ir').children[s.ir[0]-1];if(highlighted)$('ir').scrollTop=highlighted.offsetTop-$('ir').firstElementChild.offsetTop-35;
+  showCompiler(s.kind);drawButterfly(s);requestAnimationFrame(drawFlow);
+}
+function drawButterfly(s){const chart=$('butterfly');chart.replaceChildren();
+  if(s.kind!=='shuffle'){$('exchange-caption').textContent='Jump to a Warp shuffle step to see all 32 source → destination routes for the selected warp.';chart.classList.add('hidden');return;}
+  chart.classList.remove('hidden');$('exchange-caption').textContent=`Warp ${selected>>5}, XOR offset ${s.offset}. Top = source lane before the exchange; bottom = receiving lane. Gold follows the selected receiving lane ${selected&31}. Every warp performs the same pattern independently.`;
+  const x=i=>18+i*22;
+  for(let dest=0;dest<32;dest++){const src=dest^s.offset,path=svg('path',{d:`M ${x(src)} 24 C ${x(src)} 60 ${x(dest)} 62 ${x(dest)} 96`,class:dest===(selected&31)?'hot':''});chart.append(path);}
+  for(let i=0;i<32;i++){for(const y of [14,115]){const label=svg('text',{x:x(i),'text-anchor':'middle',y});label.textContent=i;chart.append(label);}}
+}
+function drawFlow(){if(!replay)return;const s=replay.frames[index],root=$('diagram'),box=root.getBoundingClientRect(),layer=$('flow');layer.setAttribute('viewBox',`0 0 ${box.width} ${box.height}`);layer.replaceChildren();
+  const defs=svg('defs'),marker=svg('marker',{id:'arrow',viewBox:'0 0 10 10',refX:9,refY:5,markerWidth:6,markerHeight:6,orient:'auto-start-reverse'});marker.append(svg('path',{d:'M 0 0 L 10 5 L 0 10 z',fill:'context-stroke'}));defs.append(marker);layer.append(defs);
+  const point=e=>{const b=e.getBoundingClientRect();return [b.x-box.x+(e.classList.contains('slot')?0:e.classList.contains('warp')?b.width:b.width/2),b.y-box.y+b.height/2];};
+  function arrow(from,to,color=COLORS[selected>>5]){const [x1,y1]=point(from),[x2,y2]=point(to),bend=Math.sign(x2-x1)*Math.max(20,Math.abs(x2-x1)*.4),lift=s.kind==='tree'&&from.classList.contains('lane')?24:-24;layer.append(svg('path',{d:`M ${x1} ${y1} C ${x1+bend} ${y1+lift} ${x2-bend} ${y2+lift} ${x2} ${y2}`,fill:'none',stroke:color,'stroke-width':2.4,'stroke-opacity':.9,'marker-end':'url(#arrow)'}));}
+  if(['load','reload'].includes(s.kind))arrow(inputs[selected+128*s.pass],lanes[selected]);
+  if(s.kind==='shuffle')arrow(lanes[selected^s.offset],lanes[selected],COLORS[(selected>>5)]);
+  if(s.kind==='publish')for(let w=0;w<4;w++)arrow(lanes[w*32],slots[w],COLORS[w]);
+  if(s.kind==='tree')for(let w=0;w<s.half;w++){arrow(slots[w],lanes[w*32],COLORS[w]);arrow(slots[w+s.half],lanes[w*32],COLORS[w+s.half]);arrow(lanes[w*32],slots[w],COLORS[w]);}
+  if(s.kind==='broadcast')for(let w=0;w<4;w++)arrow(slots[0],warps[w],COLORS[w]);
+  if(s.kind==='store')arrow(lanes[selected],outputs[selected+128*s.pass]);
+}
+$('configure').addEventListener('submit',e=>{e.preventDefault();try{regenerate(Number($('seed').value),Number($('row').value));$('config-error').textContent='';}catch(error){$('config-error').textContent=error.message;}});
+$('prev').addEventListener('click',()=>go(index-1));$('next').addEventListener('click',()=>go(index+1));$('step').addEventListener('input',()=>go(Number($('step').value)));$('jump').addEventListener('change',()=>go(Number($('jump').value)));$('thread').addEventListener('input',()=>selectThread(Number($('thread').value)));
+$('play').addEventListener('click',()=>{if(timer!==null){pause();return;}if(index===replay.frames.length-1)index=0;$('play').textContent='Pause';render();timer=setInterval(()=>{index++;render();if(index===replay.frames.length-1)pause();},Number($('speed').value));});
+$('speed').addEventListener('change',pause);$('print').addEventListener('click',()=>{pause();window.print();});document.addEventListener('visibilitychange',()=>{if(document.hidden)pause();});
+let detailsBeforeRecording=false;
+$('recording').addEventListener('click',()=>{
+  pause();const enabled=document.body.classList.toggle('recording'),details=document.querySelector('.replay-details');
+  if(enabled){detailsBeforeRecording=details.open;details.open=true;}else details.open=detailsBeforeRecording;
+  document.body.dataset.view=$('recording-view').value;
+  $('recording').setAttribute('aria-pressed',String(enabled));$('recording').textContent=enabled?'Exit recording mode':'Recording mode';
+  window.scrollTo(0,0);requestAnimationFrame(drawFlow);
+});
+$('recording-view').addEventListener('change',()=>{document.body.dataset.view=$('recording-view').value;requestAnimationFrame(drawFlow);});
+new ResizeObserver(drawFlow).observe($('diagram'));
+regenerate(2026,0);
+</script></body></html>

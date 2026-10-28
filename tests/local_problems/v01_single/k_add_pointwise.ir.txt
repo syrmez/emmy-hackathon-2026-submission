@@ -1,0 +1,5 @@
+    Tile[] (N=1)
+        in0 = load x0[0]
+        in1 = load x1[0]
+        f32 v0 = add(in0, in1)
+        add[0] = v0

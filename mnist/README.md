@@ -31,7 +31,7 @@ logits = hidden @ W2 + b2
 probabilities = torch.softmax(logits, dim=-1)
 ```
 
-`prepare.py` uses the organizer's existing `tools/generate.py` to obtain Emmy IR and launch descriptors, preserving three stage boundaries for inspection. The generator's random inputs only specify tensor shapes; inference supplies the actual pixels and learned weights. The generator may produce reference CUDA, but it is discarded and **never used by our compiler or the inference path**.
+`prepare.py` uses the organizer's existing `tests/tools/generate.py` to obtain Emmy IR and launch descriptors, preserving three stage boundaries for inspection. The generator's random inputs only specify tensor shapes; inference supplies the actual pixels and learned weights. The generator may produce reference CUDA, but it is discarded and **never used by our compiler or the inference path**.
 
 `server.py` invokes the unchanged root `compile.py` on that IR at startup. Emmy schedules four kernels:
 
@@ -47,9 +47,9 @@ PTX is **static generated code**, not a dynamic instruction trace. Binaries are 
 ## Checks and measurements
 
 ```bash
-.venv/bin/python mnist/test_demo.py           # offline: data validation, chaining, cache, HTTP safety
-.venv/bin/python mnist/test_demo.py --remote  # actual GPU vs PyTorch; needs torch + internet
-node mnist/test_browser.mjs                  # server must be running; Node 22+ and Chrome
+.venv/bin/python tests/test_mnist.py           # offline: data validation, chaining, cache, HTTP safety
+.venv/bin/python tests/test_mnist.py --remote  # actual GPU vs PyTorch; needs torch + internet
+node tests/test_mnist_browser.mjs                  # server must be running; Node 22+ and Chrome
 ```
 
 The browser check uses Chrome's DevTools protocol and Node's built-in WebSocket, with no testing packages. Override `CHROME` and `DEMO_URL` if necessary. It tests real sample and pointer-drawn inference, code views, optional steps, preprocessing, stale-result handling, failure states and mobile layout; screenshots go into the OS temporary directory. Synthetic transport responses are confined to the browser test's failure/stale-result checks and never used by the application.
@@ -70,7 +70,7 @@ Deliberate demo limits: one in-flight inference per server, fixed batch size 1 a
 uv pip install --python .venv/bin/python torch==2.14.1
 # Move mnist/assets aside first; preparation refuses to overwrite existing assets.
 .venv/bin/python mnist/prepare.py --epochs 12
-.venv/bin/python mnist/test_demo.py --remote
+.venv/bin/python tests/test_mnist.py --remote
 ```
 
 Training uses seed 42, CPU Adam, 60,000 training images, batch size 256, and train-only rotation/scale/translation augmentation. Official gzipped MNIST IDX files are downloaded over HTTPS from the OSSCI mirror, checked against their published checksums, and cached under `~/.cache/emmy-mnist`. No torchvision or executable downloaded checkpoint is used. The test set is evaluated after training, not used to select epochs. Exact training results can vary with PyTorch/platform versions.
